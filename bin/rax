@@ -1,0 +1,231 @@
+#!/usr/bin/env bash
+# rax — unified CLI for the React/React Native audit skill.
+#
+# This is a thin dispatcher. Most subcommands shell out to scripts/rax_core.py;
+# `audit` runs scripts/invoke_audit.sh; `gather` runs scripts/gather_context.sh.
+#
+# Resolves its own install location so it works from a symlink in PATH.
+
+set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# Resolve real location of this script (handle symlinks, spaces in path)
+# ---------------------------------------------------------------------------
+resolve_self() {
+  local src="${BASH_SOURCE[0]}"
+  while [ -h "$src" ]; do
+    local dir
+    dir="$(cd -P "$(dirname "$src")" >/dev/null 2>&1 && pwd)"
+    src="$(readlink "$src")"
+    [[ "$src" != /* ]] && src="$dir/$src"
+  done
+  cd -P "$(dirname "$src")" >/dev/null 2>&1 && pwd
+}
+
+BIN_DIR="$(resolve_self)"
+SKILL_ROOT="$(cd "$BIN_DIR/.." && pwd)"
+SCRIPTS="$SKILL_ROOT/scripts"
+CORE="$SCRIPTS/rax_core.py"
+GATHER="$SCRIPTS/gather_context.sh"
+INVOKE="$SCRIPTS/invoke_audit.sh"
+
+PY="${RAX_PYTHON:-python3}"
+
+# ---------------------------------------------------------------------------
+# Small helpers
+# ---------------------------------------------------------------------------
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+  B="\033[1m"; D="\033[2m"; R="\033[31m"; G="\033[32m"; Y="\033[33m"
+  C="\033[36m"; GRY="\033[90m"; X="\033[0m"
+else
+  B=""; D=""; R=""; G=""; Y=""; C=""; GRY=""; X=""
+fi
+
+die() {
+  printf "${R}error:${X} %s\n" "$*" >&2
+  exit 1
+}
+
+# ---------------------------------------------------------------------------
+# Help
+# ---------------------------------------------------------------------------
+show_help() {
+  cat <<EOF
+${B}rax${X} — React/React Native code auditor
+
+${B}USAGE${X}
+  rax <command> [options]
+
+${B}AUDIT${X}
+  rax audit [--mode MODE] [--category CAT] [--save]
+              MODE ∈ {quick, diff, focused, full}     default: diff
+              --save   also promote the result to baseline
+              --category CAT   used with --mode focused (e.g. SEC, PRF)
+
+${B}VIEW${X}
+  rax score                    headline overall score + delta vs baseline
+  rax scores                   per-category score table
+  rax delta                    score movements vs baseline (detailed)
+  rax show [ID] [--format F]   show a report (ID: latest|1|2|...|prefix)
+                               F ∈ {full, summary, scores, raw}
+  rax history [--limit N]      list past audits with scores
+
+${B}FINDINGS${X}
+  rax pending [--category C] [--severity S] [--limit N]
+                               findings in the latest audit (not yet fixed)
+  rax fixed                    findings resolved since baseline
+  rax new                      findings introduced since baseline
+
+${B}BASELINE${X}
+  rax baseline save [--id ID]  promote latest (or given) report to baseline
+  rax baseline reset           clear baseline (archived, not lost)
+  rax baseline info            metadata of current baseline
+  rax baseline list            all per-branch baselines
+
+${B}MAINTENANCE${X}
+  rax config init              create .claude/rax/config.json
+  rax config show              print current config
+  rax gather [MODE]            print the context a real audit would use (debug)
+  rax where                    show skill install path
+  rax version
+
+${B}EXAMPLES${X}
+  rax audit --mode=quick          # pre-commit quick audit of staged files
+  rax audit                       # default: diff vs baseline (pre-push)
+  rax audit --mode=full --save    # full audit, save as new baseline
+  rax pending --category=SEC      # only security findings still open
+  rax fixed                       # celebrate what you cleaned up
+  rax delta                       # see how your branch changed things
+
+${B}STATE${X} lives at ${D}.claude/rax/${X} inside your repo.
+  Commit the skill directory, ignore the state dir.
+EOF
+}
+
+# ---------------------------------------------------------------------------
+# Dispatch
+# ---------------------------------------------------------------------------
+CMD="${1:-help}"
+if [ "$CMD" != "help" ]; then shift; fi
+
+# Sanity checks that are only relevant once we pick a command that needs them.
+need_core() {
+  [ -f "$CORE" ] || die "core script missing: $CORE"
+  command -v "$PY" >/dev/null 2>&1 || die "python3 not found (set RAX_PYTHON to override)"
+}
+
+case "$CMD" in
+
+  # ---- audit ----------------------------------------------------------------
+  audit)
+    [ -f "$INVOKE" ] || die "invoke_audit.sh missing at $INVOKE"
+    exec bash "$INVOKE" "$@"
+    ;;
+
+  # ---- view -----------------------------------------------------------------
+  score|scores|delta|history)
+    need_core
+    if [ "$CMD" = "history" ]; then
+      exec "$PY" "$CORE" report history "$@"
+    fi
+    exec "$PY" "$CORE" "$CMD" "$@"
+    ;;
+
+  show)
+    # `rax show` or `rax show latest` or `rax show 2` or `rax show --format=scores`
+    need_core
+    ID=""
+    # Peel off a non-flag first arg as the id.
+    if [ $# -gt 0 ] && [[ "$1" != -* ]]; then
+      ID="$1"; shift
+    fi
+    if [ -n "$ID" ]; then
+      exec "$PY" "$CORE" report show --id "$ID" "$@"
+    else
+      exec "$PY" "$CORE" report show "$@"
+    fi
+    ;;
+
+  # ---- findings -------------------------------------------------------------
+  pending|fixed|new)
+    need_core
+    exec "$PY" "$CORE" findings "$CMD" "$@"
+    ;;
+
+  # ---- baseline -------------------------------------------------------------
+  baseline)
+    need_core
+    SUB="${1:-info}"
+    [ $# -gt 0 ] && shift || true
+    case "$SUB" in
+      save|reset|info|list)
+        exec "$PY" "$CORE" baseline "$SUB" "$@"
+        ;;
+      *)
+        die "unknown 'baseline' subcommand: $SUB  (try: save|reset|info|list)"
+        ;;
+    esac
+    ;;
+
+  # ---- report (explicit namespace for power users) -------------------------
+  report)
+    need_core
+    SUB="${1:-}"
+    [ $# -gt 0 ] && shift || true
+    case "$SUB" in
+      save|show|latest|path|history)
+        exec "$PY" "$CORE" report "$SUB" "$@"
+        ;;
+      "")
+        die "'rax report' needs a subcommand (save|show|latest|path|history)"
+        ;;
+      *)
+        die "unknown 'report' subcommand: $SUB"
+        ;;
+    esac
+    ;;
+
+  # ---- config ---------------------------------------------------------------
+  config)
+    need_core
+    SUB="${1:-show}"
+    [ $# -gt 0 ] && shift || true
+    case "$SUB" in
+      init|show)
+        exec "$PY" "$CORE" config "$SUB" "$@"
+        ;;
+      *)
+        die "unknown 'config' subcommand: $SUB  (try: init|show)"
+        ;;
+    esac
+    ;;
+
+  # ---- diagnostics ----------------------------------------------------------
+  gather)
+    [ -f "$GATHER" ] || die "gather_context.sh missing at $GATHER"
+    MODE="${1:-quick}"
+    exec bash "$GATHER" "$MODE"
+    ;;
+
+  where)
+    echo "skill:    $SKILL_ROOT"
+    echo "bin:      $BIN_DIR/rax"
+    echo "scripts:  $SCRIPTS"
+    echo "python:   $(command -v "$PY" 2>/dev/null || echo 'not found')"
+    ;;
+
+  version|--version|-v)
+    need_core
+    exec "$PY" "$CORE" version
+    ;;
+
+  help|--help|-h)
+    show_help
+    ;;
+
+  *)
+    printf "${R}unknown command:${X} %s\n\n" "$CMD" >&2
+    show_help >&2
+    exit 1
+    ;;
+esac

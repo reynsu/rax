@@ -1,0 +1,64 @@
+{
+  "_comment": "Drop this file at .claude/rax/config.json to customize. Delete the `_comment` keys — they're here for documentation only. Any key you omit falls back to the skill default.",
+
+  "weights": {
+    "_comment": "Category weights. Must sum to 100 (±0.5 tolerance). Defaults shown here.",
+    "ARC": 12,
+    "CQR": 10,
+    "RXP": 12,
+    "PRF": 12,
+    "SEC": 13,
+    "UXA": 10,
+    "TYP": 8,
+    "ERR": 7,
+    "TST": 8,
+    "DEP": 4,
+    "APT": 4
+  },
+
+  "ignore": {
+    "_comment": "Glob patterns relative to repo root. Matched files are skipped entirely. The skill already ignores node_modules, build outputs, and generated files — these are *additional* exclusions.",
+    "patterns": [
+      "src/legacy/**",
+      "src/**/*.generated.ts",
+      "src/schema.ts"
+    ]
+  },
+
+  "focus": {
+    "_comment": "If set, ONLY files matching at least one pattern are audited. Use for focused audits of a module or feature. Leave empty array to audit everything in scope.",
+    "patterns": []
+  },
+
+  "rules": {
+    "_comment": "Rule-level overrides. Use `disable` to skip a subcriterion (e.g. if it's categorically inapplicable and you don't want `n/a` noise). Use `severity.floor` to force a minimum severity for a subcriterion — useful to tighten security standards.",
+    "disable": [
+      "RXP-7"
+    ],
+    "severity": {
+      "SEC-1": { "red_flag_score": 3, "comment": "We're paranoid about secrets" },
+      "SEC-3": { "red_flag_score": 3 }
+    }
+  },
+
+  "scope": {
+    "_comment": "Override detected source root. Most projects don't need this.",
+    "src_root": "src",
+    "max_files_quick": 20,
+    "max_files_diff": 50
+  },
+
+  "reporting": {
+    "_comment": "Control report output. `language` accepts any language code; `en` is default. `save_report` toggles writing to .claude/rax/reports/. `chat_summary` controls whether Claude prints the full report to chat or a summary with a link.",
+    "language": "en",
+    "save_report": true,
+    "chat_summary": "full"
+  },
+
+  "baseline": {
+    "_comment": "Baseline policy. `auto_save` writes a baseline on full-mode runs with a clean tree without asking. `per_branch` keeps separate baselines per branch (recommended).",
+    "auto_save": false,
+    "per_branch": true,
+    "require_clean_tree": true
+  }
+}
