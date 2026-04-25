@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_SEC_INT",
+  "expected_score_1_to_10": 9,
+  "tier": "extreme_high",
+  "framework": "react",
+  "size_loc": 19,
+  "justification": "Schema-first parsing at the boundary. Types derived from Zod. Output rendered via React text node (auto-escaped). High integrity."
+}

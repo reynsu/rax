@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_COMP_COEX",
+  "expected_score_1_to_10": 2,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 7,
+  "justification": "Peer-dep warnings ignored. The runtime is in an unsupported state \u2014 any subtle bug becomes 'works on my machine' permanently."
+}

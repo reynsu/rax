@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_PERF_CAP",
+  "expected_score_1_to_10": 1,
+  "tier": "extreme_low",
+  "framework": "react-native",
+  "size_loc": 5,
+  "justification": "ScrollView with .map renders every item, no virtualization. Drops frames at ~200 items, OOMs at thousands. Catastrophic on RN."
+}

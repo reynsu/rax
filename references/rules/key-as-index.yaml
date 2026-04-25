@@ -1,0 +1,18 @@
+rules:
+  - id: rax.rel.key-as-index
+    pattern-either:
+      - pattern: |
+          $ARR.map(($ITEM, $IDX) => <$T key={$IDX} ... >...</$T>)
+      - pattern: |
+          $ARR.map(($ITEM, $IDX) => <$T key={$IDX} />)
+    message: |
+      Using array index as React key is unsafe when the list reorders or
+      filters: React reuses the wrong DOM/native node, leading to stale
+      state, broken animations, and lost focus. Use a stable id from the
+      data (item.id, slug, hash).
+    languages: [typescript]
+    severity: ERROR
+    metadata:
+      iso_sub_id: ISO_REL_FAULT
+      rax_v1_id: RXP-4
+      cwe: ""

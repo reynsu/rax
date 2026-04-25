@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_COMP_INTER",
+  "expected_score_1_to_10": 9,
+  "tier": "extreme_high",
+  "framework": "react",
+  "size_loc": 11,
+  "justification": "OpenAPI-driven types + Zod at the boundary. Backend changes break the build; runtime validation catches drifts in older deploys."
+}

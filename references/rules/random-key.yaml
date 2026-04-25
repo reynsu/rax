@@ -1,0 +1,16 @@
+rules:
+  - id: rax.rel.random-key
+    pattern-either:
+      - pattern: <$T key={Math.random()} ... />
+      - pattern: <$T key={Math.random()}>...</$T>
+      - pattern: <$T key={Date.now()} ... />
+      - pattern: <$T key={Date.now()}>...</$T>
+    message: |
+      A new key on every render forces React to unmount and remount the
+      component, losing state and triggering effects. Use a stable id.
+    languages: [typescript]
+    severity: ERROR
+    metadata:
+      iso_sub_id: ISO_REL_FAULT
+      rax_v1_id: RXP-4
+      cwe: ""

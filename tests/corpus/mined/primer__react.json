@@ -1,0 +1,21 @@
+{
+  "owner": "primer",
+  "name": "react",
+  "name_with_owner": "primer/react",
+  "created_at": "2020-01-01T00:00:00Z",
+  "pushed_at": "2026-04-01T00:00:00Z",
+  "is_archived": false,
+  "is_fork": false,
+  "lifespan_years": 7.57,
+  "star_count": 198488,
+  "fork_count": 23968,
+  "defect_density_per_file": 0.3259,
+  "recent_activity_commits": 96,
+  "review_intensity": {
+    "avg_comments_per_pr": 2.84,
+    "avg_reviews_per_pr": 3.98
+  },
+  "cve_count": 2,
+  "synthetic": true,
+  "mined_at": "2026-04-25T00:00:00Z"
+}

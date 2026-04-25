@@ -1,0 +1,21 @@
+{
+  "owner": "react-native-async-storage",
+  "name": "async-storage",
+  "name_with_owner": "react-native-async-storage/async-storage",
+  "created_at": "2020-01-01T00:00:00Z",
+  "pushed_at": "2026-04-01T00:00:00Z",
+  "is_archived": false,
+  "is_fork": false,
+  "lifespan_years": 4.28,
+  "star_count": 119358,
+  "fork_count": 20880,
+  "defect_density_per_file": 0.3836,
+  "recent_activity_commits": 25,
+  "review_intensity": {
+    "avg_comments_per_pr": 3.28,
+    "avg_reviews_per_pr": 1.23
+  },
+  "cve_count": 2,
+  "synthetic": true,
+  "mined_at": "2026-04-25T00:00:00Z"
+}

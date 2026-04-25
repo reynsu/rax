@@ -1,0 +1,29 @@
+name: Calibration drift check
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check-calibration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy pyyaml jsonschema mapie pytest
+      - name: Re-fit conformal calibration
+        run: python scripts/conformal.py --calibrate
+      - name: Verify coverage in [0.85, 0.95]
+        run: python scripts/validate_calibration.py
+      - name: Upload drift report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: calibration-drift-report
+          path: tests/results/calibration_drift_*.json

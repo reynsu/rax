@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_MAINT_MOD2",
+  "expected_score_1_to_10": 9,
+  "tier": "extreme_high",
+  "framework": "react",
+  "size_loc": 11,
+  "justification": "Single source for the auth identity, owned by a query cache. Changes propagate predictably; no drift surface."
+}

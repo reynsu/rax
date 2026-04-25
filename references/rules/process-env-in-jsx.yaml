@@ -1,0 +1,24 @@
+rules:
+  - id: rax.sec.process-env-in-jsx
+    patterns:
+      - pattern-either:
+          - pattern: |
+              <$T>{process.env.$VAR}</$T>
+          - pattern: |
+              <$T ...>{process.env.$VAR}</$T>
+          - pattern: |
+              <$T value={process.env.$VAR} ... />
+      - metavariable-regex:
+          metavariable: $VAR
+          regex: ".*(?i)(secret|key|token|private|password).*"
+    message: |
+      Embedding a server-only env var in JSX exposes it to the client bundle.
+      Vite/CRA/Next.js prefix the public env (VITE_, REACT_APP_, NEXT_PUBLIC_)
+      so the rest stays server-side. Verify the var is not sensitive before
+      shipping.
+    languages: [typescript]
+    severity: ERROR
+    metadata:
+      iso_sub_id: ISO_SEC_CONF
+      rax_v1_id: SEC-1
+      cwe: "CWE-200"

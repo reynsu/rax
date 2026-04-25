@@ -1,0 +1,21 @@
+rules:
+  - id: rax.sec.http-url-in-fetch
+    patterns:
+      - pattern-either:
+          - pattern: fetch("$URL", ...)
+          - pattern: axios.get("$URL", ...)
+          - pattern: axios.post("$URL", ...)
+          - pattern: axios("$URL", ...)
+      - metavariable-regex:
+          metavariable: $URL
+          regex: "^http://(?!(localhost|127\\.|10\\.|192\\.168\\.)).*"
+    message: |
+      Plain HTTP exposes traffic to network observers and tampering. Use
+      HTTPS for any production endpoint. Localhost / private-range URLs are
+      acceptable in development and excluded by this rule.
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      iso_sub_id: ISO_SEC_RES
+      rax_v1_id: SEC-5
+      cwe: "CWE-319"

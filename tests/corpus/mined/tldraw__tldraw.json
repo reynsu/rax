@@ -1,0 +1,21 @@
+{
+  "owner": "tldraw",
+  "name": "tldraw",
+  "name_with_owner": "tldraw/tldraw",
+  "created_at": "2020-01-01T00:00:00Z",
+  "pushed_at": "2026-04-01T00:00:00Z",
+  "is_archived": false,
+  "is_fork": false,
+  "lifespan_years": 2.77,
+  "star_count": 125092,
+  "fork_count": 18065,
+  "defect_density_per_file": 0.1161,
+  "recent_activity_commits": 72,
+  "review_intensity": {
+    "avg_comments_per_pr": 7.04,
+    "avg_reviews_per_pr": 1.98
+  },
+  "cve_count": 1,
+  "synthetic": true,
+  "mined_at": "2026-04-25T00:00:00Z"
+}

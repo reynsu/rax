@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_INTER_INC",
+  "expected_score_1_to_10": 1,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 9,
+  "justification": "Inputs without labels, contrast ratio ~1.1:1 (WCAG fails AA at 4.5). Unusable for screen-reader and low-vision users."
+}

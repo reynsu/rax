@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_COMP_INTER",
+  "expected_score_1_to_10": 2,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 6,
+  "justification": "Handwritten types diverged from the API. Runtime returns undefined for fields that should exist. Interop is illusory."
+}

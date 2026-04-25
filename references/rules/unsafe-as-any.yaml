@@ -1,0 +1,15 @@
+rules:
+  - id: rax.rel.unsafe-as-any
+    pattern-either:
+      - pattern: $X as any
+      - pattern: $X as unknown as $T
+    message: |
+      `as any` and `as unknown as T` bypass the type checker. They turn
+      compile-time guarantees into runtime hopes. Validate with a schema
+      (Zod / Yup / Valibot) at boundaries, or refine via type guards.
+    languages: [typescript]
+    severity: WARNING
+    metadata:
+      iso_sub_id: ISO_REL_FAULT
+      rax_v1_id: TYP-2
+      cwe: ""

@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_COMP_COEX",
+  "expected_score_1_to_10": 9,
+  "tier": "extreme_high",
+  "framework": "react",
+  "size_loc": 5,
+  "justification": "Engines pinned, peer deps consistent, multi-version CI matrix. The co-existence envelope is explicit and verified."
+}

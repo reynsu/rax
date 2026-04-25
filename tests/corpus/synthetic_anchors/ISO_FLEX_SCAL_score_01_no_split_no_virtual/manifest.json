@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_FLEX_SCAL",
+  "expected_score_1_to_10": 1,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 10,
+  "justification": "Heavy editor in the initial bundle even on routes that do not need it. List unbounded with .map. Will not scale to large data or moderate bundle budgets."
+}

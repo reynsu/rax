@@ -1,0 +1,11 @@
+{
+  "calibration_size": 225,
+  "empirical_coverage": 0.9467,
+  "evaluated_at": "2026-04-25T16:43:35.120672+00:00",
+  "fitted_at": "2026-04-25T16:34:11.572420+00:00",
+  "in_band": true,
+  "target_band": [
+    0.85,
+    0.95
+  ]
+}

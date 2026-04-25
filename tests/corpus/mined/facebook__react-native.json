@@ -1,0 +1,21 @@
+{
+  "owner": "facebook",
+  "name": "react-native",
+  "name_with_owner": "facebook/react-native",
+  "created_at": "2020-01-01T00:00:00Z",
+  "pushed_at": "2026-04-01T00:00:00Z",
+  "is_archived": false,
+  "is_fork": false,
+  "lifespan_years": 5.84,
+  "star_count": 7056,
+  "fork_count": 24349,
+  "defect_density_per_file": 0.16,
+  "recent_activity_commits": 33,
+  "review_intensity": {
+    "avg_comments_per_pr": 1.55,
+    "avg_reviews_per_pr": 0.86
+  },
+  "cve_count": 4,
+  "synthetic": true,
+  "mined_at": "2026-04-25T00:00:00Z"
+}

@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_INTER_UEP",
+  "expected_score_1_to_10": 2,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 6,
+  "justification": "Irreversible mass-deletion fires on a single click. No confirm, no undo, no dry-run. Indefensible UX."
+}

@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_FUN_CORR",
+  "expected_score_1_to_10": 9,
+  "tier": "extreme_high",
+  "framework": "react",
+  "size_loc": 4,
+  "justification": "Critical paths E2E + mutation testing on core lib. Bug regressions detected automatically. Functional correctness measurably high."
+}

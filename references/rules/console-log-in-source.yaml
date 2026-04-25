@@ -1,0 +1,18 @@
+rules:
+  - id: rax.maint.console-log-in-source
+    pattern-either:
+      - pattern: console.log(...)
+      - pattern: console.warn(...)
+      - pattern: console.error(...)
+      - pattern: console.debug(...)
+    message: |
+      console.* in production source leaks information (sometimes PII or
+      tokens), bloats the bundle, and pollutes monitoring. Use a logger that
+      can be silenced in release builds (debug, pino, expo-logger, etc.) or
+      remove the call.
+    languages: [typescript, javascript]
+    severity: WARNING
+    metadata:
+      iso_sub_id: ISO_MAINT_ANAL
+      rax_v1_id: ERR-4
+      cwe: ""

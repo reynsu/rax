@@ -1,0 +1,21 @@
+{
+  "owner": "react-native-elements",
+  "name": "react-native-elements",
+  "name_with_owner": "react-native-elements/react-native-elements",
+  "created_at": "2020-01-01T00:00:00Z",
+  "pushed_at": "2026-04-01T00:00:00Z",
+  "is_archived": false,
+  "is_fork": false,
+  "lifespan_years": 6.55,
+  "star_count": 42353,
+  "fork_count": 22926,
+  "defect_density_per_file": 0.219,
+  "recent_activity_commits": 40,
+  "review_intensity": {
+    "avg_comments_per_pr": 1.67,
+    "avg_reviews_per_pr": 3.85
+  },
+  "cve_count": 2,
+  "synthetic": true,
+  "mined_at": "2026-04-25T00:00:00Z"
+}

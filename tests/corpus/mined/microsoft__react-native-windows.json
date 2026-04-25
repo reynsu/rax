@@ -1,0 +1,21 @@
+{
+  "owner": "microsoft",
+  "name": "react-native-windows",
+  "name_with_owner": "microsoft/react-native-windows",
+  "created_at": "2020-01-01T00:00:00Z",
+  "pushed_at": "2026-04-01T00:00:00Z",
+  "is_archived": false,
+  "is_fork": false,
+  "lifespan_years": 3.19,
+  "star_count": 170863,
+  "fork_count": 23031,
+  "defect_density_per_file": 0.268,
+  "recent_activity_commits": 33,
+  "review_intensity": {
+    "avg_comments_per_pr": 3.87,
+    "avg_reviews_per_pr": 1.47
+  },
+  "cve_count": 0,
+  "synthetic": true,
+  "mined_at": "2026-04-25T00:00:00Z"
+}

@@ -1,0 +1,21 @@
+{
+  "owner": "radix-ui",
+  "name": "primitives",
+  "name_with_owner": "radix-ui/primitives",
+  "created_at": "2020-01-01T00:00:00Z",
+  "pushed_at": "2026-04-01T00:00:00Z",
+  "is_archived": false,
+  "is_fork": false,
+  "lifespan_years": 3.38,
+  "star_count": 58228,
+  "fork_count": 285,
+  "defect_density_per_file": 0.0784,
+  "recent_activity_commits": 85,
+  "review_intensity": {
+    "avg_comments_per_pr": 0.94,
+    "avg_reviews_per_pr": 0.74
+  },
+  "cve_count": 0,
+  "synthetic": true,
+  "mined_at": "2026-04-25T00:00:00Z"
+}

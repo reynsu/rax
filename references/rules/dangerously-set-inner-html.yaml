@@ -1,0 +1,17 @@
+rules:
+  - id: rax.sec.dangerously-set-inner-html
+    pattern-either:
+      - pattern: |
+          <$T ... dangerouslySetInnerHTML={{ __html: $X }} />
+      - pattern: |
+          <$T ... dangerouslySetInnerHTML={{ __html: $X }}>...</$T>
+    message: |
+      dangerouslySetInnerHTML is an XSS vector when the value is user-derived.
+      Sanitize with DOMPurify in a strict configuration, or use a Markdown
+      renderer that produces React elements.
+    languages: [typescript]
+    severity: ERROR
+    metadata:
+      iso_sub_id: ISO_SEC_INT
+      rax_v1_id: SEC-2
+      cwe: "CWE-79"

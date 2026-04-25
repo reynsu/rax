@@ -1,0 +1,21 @@
+{
+  "owner": "react-navigation",
+  "name": "react-navigation",
+  "name_with_owner": "react-navigation/react-navigation",
+  "created_at": "2020-01-01T00:00:00Z",
+  "pushed_at": "2026-04-01T00:00:00Z",
+  "is_archived": false,
+  "is_fork": false,
+  "lifespan_years": 3.37,
+  "star_count": 8914,
+  "fork_count": 26429,
+  "defect_density_per_file": 0.1762,
+  "recent_activity_commits": 39,
+  "review_intensity": {
+    "avg_comments_per_pr": 1.0,
+    "avg_reviews_per_pr": 3.7
+  },
+  "cve_count": 4,
+  "synthetic": true,
+  "mined_at": "2026-04-25T00:00:00Z"
+}

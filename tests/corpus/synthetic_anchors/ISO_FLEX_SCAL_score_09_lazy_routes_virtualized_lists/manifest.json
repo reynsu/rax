@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_FLEX_SCAL",
+  "expected_score_1_to_10": 9,
+  "tier": "extreme_high",
+  "framework": "react",
+  "size_loc": 15,
+  "justification": "Lazy split + virtualized list. Bundle and DOM both scale sub-linearly with payload size."
+}

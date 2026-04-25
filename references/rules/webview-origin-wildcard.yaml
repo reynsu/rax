@@ -1,0 +1,16 @@
+rules:
+  - id: rax.sec.webview-origin-wildcard
+    pattern-either:
+      - pattern: <WebView ... originWhitelist={["*"]} ... />
+      - pattern: <WebView ... originWhitelist={['*']} ... />
+    message: |
+      WebView with originWhitelist={["*"]} accepts navigation to any URL,
+      enabling phishing redirects and malicious JS bridges. Restrict to your
+      app's known origins (https://yourdomain.com, file://) and review every
+      addition.
+    languages: [typescript]
+    severity: ERROR
+    metadata:
+      iso_sub_id: ISO_SEC_RES
+      rax_v1_id: SEC-8
+      cwe: "CWE-942"

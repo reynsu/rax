@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_SAFE_SI",
+  "expected_score_1_to_10": 2,
+  "tier": "extreme_low",
+  "framework": "react-native",
+  "size_loc": 4,
+  "justification": "Unaudited, unmaintained native module in dependency chain. Each release opens a supply-chain hole."
+}

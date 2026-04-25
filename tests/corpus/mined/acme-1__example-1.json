@@ -1,0 +1,21 @@
+{
+  "owner": "acme-1",
+  "name": "example-1",
+  "name_with_owner": "acme-1/example-1",
+  "created_at": "2020-01-01T00:00:00Z",
+  "pushed_at": "2026-04-01T00:00:00Z",
+  "is_archived": false,
+  "is_fork": false,
+  "lifespan_years": 2.65,
+  "star_count": 114418,
+  "fork_count": 11377,
+  "defect_density_per_file": 0.3414,
+  "recent_activity_commits": 45,
+  "review_intensity": {
+    "avg_comments_per_pr": 3.77,
+    "avg_reviews_per_pr": 3.94
+  },
+  "cve_count": 0,
+  "synthetic": true,
+  "mined_at": "2026-04-25T00:00:00Z"
+}

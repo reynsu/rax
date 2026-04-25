@@ -1,0 +1,15 @@
+rules:
+  - id: rax.sec.innerhtml-userinput
+    pattern-either:
+      - pattern: $E.innerHTML = $X
+      - pattern: $E.outerHTML = $X
+    message: |
+      Direct innerHTML / outerHTML assignment is a primary XSS vector. Use
+      textContent for plain text, React rendering for structured content,
+      or sanitize via DOMPurify with a strict config.
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      iso_sub_id: ISO_SEC_INT
+      rax_v1_id: SEC-2
+      cwe: "CWE-79"

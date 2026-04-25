@@ -1,0 +1,20 @@
+rules:
+  - id: rax.a11y.touchable-without-a11y
+    patterns:
+      - pattern-either:
+          - pattern: <TouchableOpacity ...>...</TouchableOpacity>
+          - pattern: <TouchableHighlight ...>...</TouchableHighlight>
+          - pattern: <TouchableWithoutFeedback ...>...</TouchableWithoutFeedback>
+          - pattern: <Pressable ...>...</Pressable>
+      - pattern-not: <$T accessibilityLabel=$L ...>...</$T>
+      - pattern-not: <$T accessible={true} accessibilityLabel=$L ...>...</$T>
+    message: |
+      Touchable / Pressable elements without accessibilityLabel are silent to
+      screen readers. Provide an accessibilityLabel that describes what the
+      action does (verb-first), not what the icon looks like.
+    languages: [typescript]
+    severity: ERROR
+    metadata:
+      iso_sub_id: ISO_INTER_INC
+      rax_v1_id: UXA-1
+      cwe: ""

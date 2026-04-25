@@ -27,3 +27,13 @@ desktop.ini
 *.log
 *.tmp
 .tmp/
+
+# Test coverage / cache
+.coverage
+.coverage.*
+.pytest_cache/
+htmlcov/
+
+# rax v2 caches and locally-fitted artifacts
+.cache/
+tests/results/conformal_calibration.json

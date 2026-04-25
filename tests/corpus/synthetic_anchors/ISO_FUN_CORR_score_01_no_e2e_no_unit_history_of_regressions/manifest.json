@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_FUN_CORR",
+  "expected_score_1_to_10": 1,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 3,
+  "justification": "No tests, repeated regressions on previously-fixed bugs. Functional correctness is unmeasured and demonstrably weak."
+}

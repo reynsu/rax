@@ -1,0 +1,15 @@
+rules:
+  - id: rax.sec.eval-on-input
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: new Function(...)
+    message: |
+      eval and new Function execute arbitrary code, including any user input
+      that reaches them. Replace with a parser/expression evaluator with a
+      defined grammar. There are very few legitimate uses on the client.
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      iso_sub_id: ISO_SEC_INT
+      rax_v1_id: SEC-2
+      cwe: "CWE-95"

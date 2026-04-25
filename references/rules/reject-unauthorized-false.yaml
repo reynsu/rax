@@ -1,0 +1,18 @@
+rules:
+  - id: rax.sec.reject-unauthorized-false
+    pattern-either:
+      - pattern: |
+          { ..., rejectUnauthorized: false, ... }
+      - pattern: |
+          new https.Agent({ ..., rejectUnauthorized: false, ... })
+    message: |
+      rejectUnauthorized: false disables TLS certificate validation, opening
+      the connection to MITM. Use a proper CA bundle instead, or — only in
+      controlled test environments — set NODE_TLS_REJECT_UNAUTHORIZED at
+      runtime so it never reaches production.
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      iso_sub_id: ISO_SEC_RES
+      rax_v1_id: SEC-5
+      cwe: "CWE-295"

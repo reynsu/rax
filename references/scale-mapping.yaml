@@ -1,0 +1,45 @@
+# 1-4 → 1-10 mapping for the rax v2 audit pipeline.
+#
+# Why a 1-4 internal scale: short scales reduce verbosity bias and
+# position bias in LLM judges (Zheng et al. 2023, "Judging LLM-as-a-Judge").
+# The user-visible report is on 1-10 because that matches the v1 expectation
+# and gives more headroom for conformal prediction intervals.
+#
+# How rax uses this file:
+#   scripts/scoring.py loads `default` and applies overrides per sub-char.
+#   The mapping is non-linear — score 1 and score 10 are anchored at the
+#   bookends; score 2/3 in 1-4 spread across the middle.
+
+# Default: 1=2.0, 2=5.0, 3=7.5, 4=10.0  (matches scripts/scoring.py)
+default:
+  "1": 2.5
+  "2": 5.0
+  "3": 7.5
+  "4": 10.0
+
+# Sub-characteristic overrides — apply when a sub-char's anchors are
+# qualitatively different from the default.
+overrides:
+  # Security floors are absolute. A hardcoded production secret is 1, not 2.5.
+  ISO_SEC_CONF:
+    "1": 1.0
+    "2": 4.0
+    "3": 7.0
+    "4": 9.0
+  ISO_SEC_AUTH:
+    "1": 1.0
+    "2": 4.0
+    "3": 7.0
+    "4": 9.0
+  ISO_SAFE_FS:
+    "1": 1.0
+    "2": 4.0
+    "3": 7.0
+    "4": 9.0
+  # Reliability floors — type errors and rules-of-hooks violations are
+  # categorical defects, score 1 should map to 1.
+  ISO_REL_FAULT:
+    "1": 1.0
+    "2": 4.5
+    "3": 7.5
+    "4": 9.5

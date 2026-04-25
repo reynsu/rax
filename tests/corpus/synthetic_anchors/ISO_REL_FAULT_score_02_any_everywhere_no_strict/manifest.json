@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_REL_FAULT",
+  "expected_score_1_to_10": 2,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 5,
+  "justification": "any + @ts-ignore + property access without runtime check. Will crash the moment `data` is missing the expected shape."
+}

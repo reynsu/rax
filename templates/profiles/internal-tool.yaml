@@ -1,0 +1,60 @@
+# Profile: internal-tool
+# Tools internos: dashboards de admin, ops consoles, herramientas de soporte,
+# B2B SaaS para usuarios técnicos. Maintainability domina (estos tools tienen
+# vidas largas y rotación de owners alta), UX y onboarding pesan menos
+# (usuarios entrenados/forzados), Compatibility y Flexibility suben (a
+# menudo se integran con muchos sistemas internos).
+
+description: |
+  Tools internos / B2B con usuarios técnicos. Maintainability al 35% —
+  el costo dominante es el handoff entre teams y refactors a 1-3 años.
+  Interaction Capability cae a 8% porque usuarios son entrenados.
+  Compatibility e Interoperability suben porque suelen integrarse con
+  varios sistemas internos.
+
+weights:
+  functional_suitability: 0.04
+  performance_efficiency: 0.10    # importante pero no crítico (usuarios saben esperar)
+  compatibility: 0.07              # alto: integraciones con sistemas legacy/internal APIs
+  interaction_capability: 0.08     # bajo: usuarios entrenados, no consumer-grade UX
+  reliability: 0.15                # outages bloquean al equipo, pero no son consumer-facing
+  security: 0.13                   # auth interno + datos sensibles, pero menor exposición que consumer
+  maintainability: 0.35            # >50% más alto que consumer — el driver dominante
+  flexibility: 0.07                # tools internos rotan de owner / cambian de scope
+  safety: 0.01                     # generalmente n/a en tools internos
+
+utility_overrides:
+  # Maintainability sub-chars críticos para internal: si Modularity o
+  # Modifiability colapsan, el tool se vuelve write-only.
+  ISO_MAINT_MOD: sigmoid           # modularidad
+  ISO_MAINT_MOD2: sigmoid          # modifiability
+
+red_flag_rules:
+  - id: hardcoded_secret
+    description: "API key, token, or credential hardcoded in source"
+    cap_category: security
+    cap_at: 4
+  - id: rules_of_hooks_violation
+    description: "Conditional hook / hook in loop"
+    cap_category: reliability
+    cap_at: 4
+  - id: god_component
+    description: "Component >500 lines mixing data, business, view, navigation"
+    cap_category: maintainability
+    cap_at: 4                       # más estricto en internal: refactor cost lethal
+  - id: circular_dependency
+    description: "Circular dependency between modules"
+    cap_category: maintainability
+    cap_at: 4
+  - id: any_type_majority
+    description: ">15% of typed surface uses 'any' or 'unknown as Foo'"
+    cap_category: maintainability
+    cap_at: 4
+  - id: zero_tests_on_business_logic
+    description: "Core business logic without any unit tests"
+    cap_category: maintainability
+    cap_at: 5
+  - id: missing_error_boundary_with_network
+    description: "App with network calls and no error boundary"
+    cap_category: reliability
+    cap_at: 5

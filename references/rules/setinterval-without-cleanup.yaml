@@ -1,0 +1,31 @@
+rules:
+  - id: rax.rel.setinterval-without-cleanup
+    patterns:
+      - pattern-inside: |
+          useEffect(() => {
+            ...
+          }, ...)
+      - pattern: setInterval(...)
+      - pattern-not-inside: |
+          useEffect(() => {
+            ...
+            clearInterval(...)
+            ...
+          }, ...)
+      - pattern-not-inside: |
+          useEffect(() => {
+            ...
+            return () => {
+              ...
+            }
+          }, ...)
+    message: |
+      setInterval inside useEffect must be cleared in the cleanup function or
+      it leaks across re-renders / unmounts. Return a function that calls
+      clearInterval with the handle.
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      iso_sub_id: ISO_REL_FAULT
+      rax_v1_id: PRF-6
+      cwe: "CWE-401"

@@ -1,0 +1,14 @@
+rules:
+  - id: rax.perf.scrollview-with-map
+    pattern: |
+      <ScrollView ...>...{$ARR.map(...)}...</ScrollView>
+    message: |
+      ScrollView rendering an unbounded list via .map() blocks the main thread
+      and never recycles views. Replace with FlatList/SectionList, which
+      virtualizes off-screen items.
+    languages: [typescript]
+    severity: ERROR
+    metadata:
+      iso_sub_id: ISO_PERF_CAP
+      rax_v1_id: PRF-3
+      cwe: ""

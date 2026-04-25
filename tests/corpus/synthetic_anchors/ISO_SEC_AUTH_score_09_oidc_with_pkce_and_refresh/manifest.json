@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_SEC_AUTH",
+  "expected_score_1_to_10": 9,
+  "tier": "extreme_high",
+  "framework": "react",
+  "size_loc": 16,
+  "justification": "OIDC + PKCE + silent renew + offline_access is the modern web baseline. The API still must validate the token server-side; that part is out of scope here."
+}

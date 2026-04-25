@@ -1,0 +1,14 @@
+rules:
+  - id: rax.sec.document-cookie-write
+    pattern: document.cookie = $X
+    message: |
+      document.cookie writes from JS can't set httpOnly. For auth tokens
+      delegate to the server (Set-Cookie with HttpOnly + Secure +
+      SameSite=Lax/Strict). For non-secret prefs prefer localStorage or
+      explicit document.cookie helpers that enforce attributes.
+    languages: [typescript, javascript]
+    severity: WARNING
+    metadata:
+      iso_sub_id: ISO_SEC_CONF
+      rax_v1_id: SEC-3
+      cwe: "CWE-1004"

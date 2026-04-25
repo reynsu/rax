@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_INTER_UEP",
+  "expected_score_1_to_10": 9,
+  "tier": "extreme_high",
+  "framework": "react",
+  "size_loc": 22,
+  "justification": "Zod-validated email, actionable error message, explicit confirm, predictable form behavior. Errors are recoverable with one step."
+}

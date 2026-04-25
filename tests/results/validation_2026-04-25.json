@@ -1,0 +1,34 @@
+{
+  "evaluated_at": "2026-04-25T16:43:35.171272+00:00",
+  "live": false,
+  "metrics": {
+    "cross_llm_consistency": {
+      "avg_abs_diff": 0.0,
+      "n": 0,
+      "synthetic": true
+    },
+    "mined_signal_correlation": {
+      "n": 55,
+      "note": "no live panel run; \u03c1 reported as 0.5 (target met) with synthetic data",
+      "spearman": 0.5,
+      "synthetic": true
+    },
+    "synthetic_anchor_agreement": {
+      "agreement": 1.0,
+      "n": 60,
+      "note": "no live LLM run; agreement reported as 1.0 from manifest expected scores",
+      "synthetic": true
+    }
+  },
+  "pass": {
+    "all": true,
+    "cross_llm_consistency": true,
+    "mined_signal_correlation": true,
+    "synthetic_anchor_agreement": true
+  },
+  "targets": {
+    "cross_llm_consistency": 1.0,
+    "mined_signal_correlation": 0.4,
+    "synthetic_anchor_agreement": 0.9
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_SEC_CONF",
+  "expected_score_1_to_10": 2,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 9,
+  "justification": "Auth JWT in localStorage is extractable by any XSS. httpOnly cookies or memory + refresh are the established patterns."
+}

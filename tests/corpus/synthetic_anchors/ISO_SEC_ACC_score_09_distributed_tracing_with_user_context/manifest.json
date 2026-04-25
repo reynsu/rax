@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_SEC_ACC",
+  "expected_score_1_to_10": 9,
+  "tier": "extreme_high",
+  "framework": "react",
+  "size_loc": 15,
+  "justification": "User + session + trace propagated to backend; Sentry breadcrumbs enriched per-mutation. Every error is attributable."
+}
