@@ -125,3 +125,71 @@ def test_parse_deterministic_reads_normal_size_json(tmp_path):
     p = tmp_path / "ok.json"
     p.write_text(json.dumps({"hello": "world"}))
     assert pd._read_json(str(p)) == {"hello": "world"}
+
+
+# ---------- regression: rax custom rules' metadata.iso_sub_id is honored ----------
+
+
+def test_parse_semgrep_uses_metadata_iso_sub_id(tmp_path):
+    """When a rule's check_id is `references.rules.rax.<x>` and the regex-
+    based mapper has no entry for that pattern, the parser previously fell
+    back to TOOL_DEFAULT_ISO['semgrep'] = 'ISO_SEC_INT', mis-bucketing
+    accessibility / perf / reliability findings as security. The parser
+    must prefer `extra.metadata.iso_sub_id` declared in the rule YAML.
+    """
+    import json
+
+    import scripts.parse_deterministic as pd
+
+    semgrep_out = tmp_path / "semgrep.json"
+    semgrep_out.write_text(json.dumps({"results": [
+        # rax custom rule — has metadata.iso_sub_id, mapper has no regex match.
+        {
+            "check_id": "references.rules.rax.a11y.touchable-without-a11y",
+            "path": "src/Foo.tsx",
+            "start": {"line": 12},
+            "extra": {
+                "severity": "ERROR",
+                "message": "missing accessibilityLabel",
+                "metadata": {"iso_sub_id": "ISO_INTER_INC"},
+            },
+        },
+        # OSS-style rule — no metadata.iso_sub_id; mapper handles via regex.
+        {
+            "check_id": "react-hooks/exhaustive-deps",
+            "path": "src/Bar.tsx",
+            "start": {"line": 7},
+            "extra": {"severity": "WARNING", "message": "missing dep"},
+        },
+    ]}))
+
+    findings = pd.parse_semgrep(str(semgrep_out))
+    by_id = {f["rule_id"]: f["iso_sub_id"] for f in findings}
+
+    # Custom rule lands in the metadata-declared bucket, NOT the SEC_INT default.
+    assert by_id["references.rules.rax.a11y.touchable-without-a11y"] == "ISO_INTER_INC"
+    # OSS rule continues to use the regex mapper.
+    assert by_id["react-hooks/exhaustive-deps"] == "ISO_REL_FAULT"
+
+
+def test_parse_semgrep_ignores_invalid_metadata_iso_sub_id(tmp_path):
+    """If metadata.iso_sub_id is malformed (not a string starting with
+    'ISO_'), fall back to the regex mapper instead of trusting it."""
+    import json
+
+    import scripts.parse_deterministic as pd
+
+    semgrep_out = tmp_path / "semgrep.json"
+    semgrep_out.write_text(json.dumps({"results": [
+        {
+            "check_id": "react-hooks/rules-of-hooks",
+            "path": "x.tsx",
+            "start": {"line": 1},
+            "extra": {
+                "severity": "ERROR",
+                "metadata": {"iso_sub_id": "garbage"},
+            },
+        },
+    ]}))
+    findings = pd.parse_semgrep(str(semgrep_out))
+    assert findings[0]["iso_sub_id"] == "ISO_REL_FAULT"

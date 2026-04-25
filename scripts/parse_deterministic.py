@@ -200,8 +200,18 @@ def parse_semgrep(path: Optional[str]) -> List[Dict[str, Any]]:
     for r in data.get("results", []):
         rule_id = r.get("check_id", "")
         extra = r.get("extra", {}) or {}
+        # Prefer the rule's declared `metadata.iso_sub_id` (custom rax
+        # rules set this explicitly). Fall back to the regex mapper for
+        # OSS rulesets (p/javascript, p/react, p/owasp-top-ten) where we
+        # don't control the YAML.
+        meta_sub = (extra.get("metadata") or {}).get("iso_sub_id")
+        sub_id = (
+            meta_sub
+            if isinstance(meta_sub, str) and meta_sub.startswith("ISO_")
+            else map_rule_to_iso(rule_id, "semgrep")
+        )
         out.append({
-            "iso_sub_id": map_rule_to_iso(rule_id, "semgrep"),
+            "iso_sub_id": sub_id,
             "tool": "semgrep",
             "rule_id": rule_id,
             "file": r.get("path", ""),
