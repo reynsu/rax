@@ -97,13 +97,10 @@ Tools deterministas:  Semgrep · ESLint · tsc · madge · jscpd · npm audit
 Profile:              <profile name + path>
 Generated:            <iso datetime>
 
-Honesty footer (always included):
-> Scores are 90% confidence intervals, not point estimates. Sub-chars
-> tagged ABSTAINED could not be evaluated reliably (panel disagreement
-> or insufficient calibration). The rax corpus does not include
-> human-validated ground truth; calibration uses proxy signals
-> (synthetic anchors, mined defect-density, cross-LLM consensus).
-> See references/corpus.md for full epistemology.
+Honesty footer (always included): see the canonical wording in
+the README's "Honesty footer" section. Reports embed it verbatim;
+this file references the README rather than duplicating the text
+to avoid the two copies drifting.
 ```
 
 ## Backward compatibility (v1 readers)

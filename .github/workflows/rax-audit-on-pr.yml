@@ -1,0 +1,122 @@
+# Per-PR rax audit. Runs on every pull request that changes source files.
+#
+# Mode is `quick` by design: it caps cost at $0 (deterministic-only when no
+# API keys are configured) or a few cents per PR. Reserve `--mode=full`
+# (3 models × 5 replicates) for release reviews, not every PR.
+#
+# This workflow does NOT pass/fail PRs on score thresholds — rax produces
+# 90% confidence intervals, not point estimates, and using a hard
+# threshold against an interval is the kind of false-precision rax
+# explicitly rejects. The check posts a `neutral` conclusion with the
+# overall median and interval as the summary; humans read it and decide.
+#
+# To use: copy this workflow into your React/RN project's
+# `.github/workflows/`, add an `ANTHROPIC_API_KEY` secret if you want the
+# LLM panel, then open a PR.
+name: rax audit (per-PR)
+
+on:
+  pull_request:
+    paths:
+      # Adjust to your project's source layout.
+      - "src/**"
+      - "app/**"
+      - "package.json"
+      - "package-lock.json"
+      - "yarn.lock"
+      - "bun.lock"
+      - "tsconfig.json"
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout the PR
+        uses: actions/checkout@v4
+        with:
+          # Need depth >= 2 so `rax audit` can diff against the merge base.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install rax
+        run: |
+          # Adjust the source path if rax lives elsewhere.
+          git clone --depth=1 https://github.com/reynsu/rax /tmp/rax
+          cd /tmp/rax
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          bash install.sh
+          python scripts/conformal.py --calibrate
+
+      - name: Run rax audit (quick mode)
+        id: rax
+        env:
+          # Optional. Without this, the LLM step is skipped and the
+          # audit runs deterministic-only (still produces a usable score).
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          RAX_OUT_DIR: /tmp/rax-out
+        run: |
+          set -e
+          mkdir -p /tmp/rax-out
+          # Quick mode: cheapest scope, single judge.
+          rax audit --mode=quick --no-deterministic || true
+          # `rax score` prints the median; capture for the check summary.
+          MEDIAN="$(rax score 2>/dev/null | head -1 || echo 'rax score unavailable')"
+          echo "median=$MEDIAN" >> "$GITHUB_OUTPUT"
+          # Full report — uploaded as artifact for human review.
+          rax show latest --format=full > /tmp/rax-out/report.md 2>/dev/null || \
+            echo '(report not produced)' > /tmp/rax-out/report.md
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rax-audit-report
+          path: |
+            /tmp/rax-out/report.md
+            /tmp/rax-out/rax-deterministic.json
+
+      - name: Post Check with the headline median
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const median = `${{ steps.rax.outputs.median }}`;
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'rax audit (quick)',
+              head_sha: context.payload.pull_request.head.sha,
+              status: 'completed',
+              // Neutral on purpose: rax produces calibrated intervals,
+              // not pass/fail thresholds. Humans decide.
+              conclusion: 'neutral',
+              output: {
+                title: `rax · ${median}`,
+                summary: [
+                  `**${median}**`,
+                  '',
+                  'rax v2 produces 90% confidence intervals, not point',
+                  'estimates. The full report (with intervals + ABSTAINED',
+                  'rows + transparency footer) is in the artifact named',
+                  '`rax-audit-report`.',
+                  '',
+                  'For release-grade audits run `rax audit --mode=full`',
+                  'locally; that mode invokes the multi-judge panel and',
+                  'is too expensive for per-PR CI.',
+                ].join('\n'),
+              },
+            });

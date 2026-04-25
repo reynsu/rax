@@ -433,6 +433,68 @@ $ rax audit                  ← user types one command (or triggers SKILL.md)
 > calibration uses proxy signals — synthetic anchors, mined
 > defect-density, cross-LLM consensus. See `references/corpus.md`.
 
+This block is the canonical wording. Every rax report appends it
+verbatim; `references/report-format.md` references this section
+rather than duplicating the text.
+
+## CI integration
+
+For per-PR audits in GitHub Actions, copy
+[`.github/workflows/rax-audit-on-pr.yml`](./.github/workflows/rax-audit-on-pr.yml)
+into your project and add an `ANTHROPIC_API_KEY` secret. The workflow:
+
+- Runs `rax audit --mode=quick` on every PR that touches `src/**` (adjust
+  the `paths:` filter for your project layout).
+- Posts a GitHub **Check** with the median + interval as the summary.
+- Uploads the full report as an artifact for human review.
+- Uses `conclusion: neutral` rather than pass/fail — rax produces
+  calibrated intervals, not thresholds. Forcing a hard pass/fail would
+  be exactly the false-precision rax explicitly rejects.
+
+For release-grade audits (`--mode=full`, multi-judge × 5 replicates),
+run locally before tagging — that mode is too expensive for every PR.
+
+## FAQ
+
+**How much does an audit cost?**
+- `--mode=quick` (default for CI): ~$0 with no API keys (deterministic-only); a few cents with `ANTHROPIC_API_KEY`.
+- `--mode=full`: $0.50–$2 per run (3 models × 5 replicates = 15 LLM calls).
+- A daily quick + weekly full schedule on a single repo runs to roughly **$10–25/month**.
+
+**Are runs reproducible?**
+- The deterministic layer is fully reproducible — same inputs, same findings.
+- The LLM panel runs at `temperature=0.3` so outputs vary slightly per call. The conformal layer is built around that variance: run-to-run intervals overlap heavily and the *median* moves much less than the variance of any single judge would suggest.
+- For tightest reproducibility, increase `--replicates` in `--mode=full`.
+
+**What if `claude` isn't installed?**
+- `rax audit` prints the composed prompt to stdout with a banner that says where to paste it (any Claude Code UI works). The deterministic layer still runs and its findings are visible in the prompt.
+- To skip both: `rax audit --no-deterministic`. You lose Semgrep/ESLint/tsc coverage; recommended only when you're sanity-checking the LLM path.
+
+**Which profile do I pick?**
+- Default to `consumer-app` for any consumer mobile/web app.
+- Switch to `fintech` only for trading/banking/payments code (Security weight jumps to 0.30).
+- Switch to `internal-tool` for B2B / dashboards (Maintainability weight jumps to 0.35).
+- Switch to `accessibility-critical` for gov / health / education (Interaction Capability jumps to 0.30).
+- **Don't pick a profile to make the score look better.** Pick the one that matches your domain; the profile is recorded in the report header, so reviewers can see the choice.
+
+**Can I add my own ISO sub-characteristic?**
+No. The 41 sub-characteristics in `references/rubric-v2.md` come from ISO/IEC 25010:2023 — that's the contract. You can adjust *weights* per profile (or define a new profile via `extends:`) but not invent new buckets, otherwise scores stop being comparable across rax users.
+
+**The Overall is 7.3 but Security is 4.2 — should I trust the headline?**
+Read the per-ISO table, not just the Overall. If a critical sub-characteristic (Security/Confidentiality, Reliability/Faultlessness, etc.) is below its anchor for "acceptable", the Overall is misleading. The kiwichat audit in `docs/example-audits/` is the canonical example of this pattern.
+
+## Getting help
+
+- **Bugs and feature requests** — open an issue on GitHub: <https://github.com/reynsu/rax/issues>.
+- **Security issues** — please don't open a public issue. Use GitHub's
+  private vulnerability reporting: *Security → Report a vulnerability*
+  on the repo's Security tab.
+- **Questions about scoring or methodology** — file a discussion or an
+  issue with the `question` label. The corpus and rubric are versioned
+  on disk (`references/rubric-v2.md`, `references/corpus.md`); cite the
+  specific sub-characteristic ID (`ISO_SEC_CONF`, etc.) and version so
+  the answer stays anchored.
+
 ## Documentation index
 
 | Document | Purpose |
