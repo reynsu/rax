@@ -151,6 +151,7 @@ def _safe_rel(p: Path, root: Path) -> str:
 # Report parser — same fixed format as references/report-format.md
 # ---------------------------------------------------------------------------
 
+# v1 patterns (3-letter category codes, single-number scores).
 RE_OVERALL = re.compile(r"^##\s*Overall:\s*([0-9]+\.[0-9])\s*/\s*10", re.MULTILINE)
 RE_CAT_ROW = re.compile(
     r"^\|\s*([A-Z]{3})\s*\|[^|]+\|\s*([0-9]+\.[0-9])\s*/\s*10\s*\|",
@@ -164,12 +165,38 @@ RE_FINDING = re.compile(
     r"^###\s*([CW])(\d+)\.\s*\[([A-Z]{3})\]\s*(.+?)$",
     re.MULTILINE,
 )
+
+# v2 patterns. Reports place the overall as e.g.:
+#   `## Overall: [6.4, 8.1]/10  (90% CI, median 7.3)`
+RE_OVERALL_V2 = re.compile(
+    r"^##\s*Overall:\s*\[\s*([0-9]+\.[0-9]+)\s*,\s*([0-9]+\.[0-9]+)\s*\]\s*/\s*10"
+    r".*?median\s+([0-9]+\.[0-9]+)",
+    re.MULTILINE | re.IGNORECASE,
+)
+# v2 category table row:
+#   `| Security | [3.5, 5.0] | 4.2 | high | -0.4 |`
+#   `| Reliability | ABSTAINED | — | low | — |`
+RE_CAT_ROW_V2 = re.compile(
+    r"^\|\s*([A-Za-z][A-Za-z _\-/]+?)\s*\|\s*"
+    r"(?:\[\s*([0-9]+\.[0-9]+)\s*,\s*([0-9]+\.[0-9]+)\s*\]|ABSTAINED)\s*\|\s*"
+    r"(?:([0-9]+\.[0-9]+)|—|-)\s*\|",
+    re.MULTILINE,
+)
+# v2 finding header: `### 1. [SEC/Confidentiality] Hardcoded production secret`
+RE_FINDING_V2 = re.compile(
+    r"^###\s*\d+\.\s*\[([A-Z]+(?:/[A-Za-z _]+)?)\]\s*(.+?)$",
+    re.MULTILINE,
+)
+RE_PROFILE  = re.compile(r"^\*\*Profile:\*\*\s*(.+?)$", re.MULTILINE)
+RE_RUBRIC   = re.compile(r"^\*\*Rubric:\*\*\s*(.+?)$", re.MULTILINE)
 RE_WHERE    = re.compile(r"^-\s*\*\*Where:\*\*\s*(.+?)$", re.MULTILINE)
 RE_SEVERITY = re.compile(r"^-\s*\*\*Severity:\*\*\s*(\w+)", re.MULTILINE)
 RE_FIX      = re.compile(r"^-\s*\*\*Fix:\*\*\s*(.+?)$", re.MULTILINE)
-RE_MODE     = re.compile(r"^-\s*\*\*Mode:\*\*\s*(\w+)", re.MULTILINE)
-RE_COMMIT   = re.compile(r"^-\s*\*\*Commit:\*\*\s*([0-9a-f]{6,40})", re.MULTILINE)
-RE_BRANCH   = re.compile(r"^-\s*\*\*Branch:\*\*\s*(.+?)$", re.MULTILINE)
+# Match metadata in either v1 (`- **Key:** value`) or v2 (`**Key:** value`)
+# layout. Leading `- ` is optional.
+RE_MODE     = re.compile(r"^(?:-\s*)?\*\*Mode:\*\*\s*(\w+)", re.MULTILINE)
+RE_COMMIT   = re.compile(r"^(?:-\s*)?\*\*Commit:\*\*\s*([0-9a-f]{6,40})", re.MULTILINE)
+RE_BRANCH   = re.compile(r"^(?:-\s*)?\*\*Branch:\*\*\s*(.+?)$", re.MULTILINE)
 
 CATEGORY_WEIGHTS = {
     "ARC": 12, "CQR": 10, "RXP": 12, "PRF": 12, "SEC": 13,
@@ -190,58 +217,134 @@ CATEGORY_NAMES = {
 }
 
 def parse_report(md: str) -> Dict[str, Any]:
-    """Extract scores and findings from a report markdown file."""
+    """Extract scores and findings from a report markdown file.
+
+    Detects v1 vs v2 format and returns a unified shape:
+
+        {
+          "version":     "v1" | "v2",
+          "overall":     float          # the median in v2, the score in v1
+          "interval":    [lo, hi] | None # only for v2
+          "categories":  {name: float}  # median in v2, score in v1
+          "category_intervals": {name: [lo, hi]} | {}  # v2 only
+          "subcriteria": {id: int}      # v1 only (kept for backwards compat)
+          "findings":    [...]
+          "mode" / "commit" / "branch" / "profile" / "rubric": str | None
+        }
+    """
     result: Dict[str, Any] = {
+        "version": None,
         "overall": None,
+        "interval": None,
         "categories": {},
+        "category_intervals": {},
         "subcriteria": {},
         "findings": [],
         "mode": None,
         "commit": None,
         "branch": None,
+        "profile": None,
+        "rubric": None,
     }
 
-    m = RE_OVERALL.search(md)
-    if not m:
+    # --- detect version by overall-line shape ---
+    m_v2 = RE_OVERALL_V2.search(md)
+    m_v1 = RE_OVERALL.search(md)
+
+    if m_v2:
+        result["version"] = "v2"
+        lo, hi, median = float(m_v2.group(1)), float(m_v2.group(2)), float(m_v2.group(3))
+        result["overall"] = median
+        result["interval"] = [lo, hi]
+
+        for name, lo_s, hi_s, med_s in RE_CAT_ROW_V2.findall(md):
+            cname = name.strip()
+            if not cname or cname.lower() in ("iso characteristic", "characteristic"):
+                continue
+            if lo_s and hi_s:
+                result["category_intervals"][cname] = [float(lo_s), float(hi_s)]
+            if med_s:
+                result["categories"][cname] = float(med_s)
+
+        m_prof = RE_PROFILE.search(md)
+        if m_prof:
+            result["profile"] = m_prof.group(1).strip()
+        m_rub = RE_RUBRIC.search(md)
+        if m_rub:
+            result["rubric"] = m_rub.group(1).strip()
+
+    elif m_v1:
+        result["version"] = "v1"
+        result["overall"] = float(m_v1.group(1))
+        for cat, score in RE_CAT_ROW.findall(md):
+            result["categories"][cat] = float(score)
+        for code, _name, score in RE_SUB_ROW.findall(md):
+            result["subcriteria"][code] = int(score)
+    else:
         raise ValueError("could not parse overall score; is this a rax report?")
-    result["overall"] = float(m.group(1))
 
-    for cat, score in RE_CAT_ROW.findall(md):
-        result["categories"][cat] = float(score)
+    # Metadata shared between v1 and v2.
+    m_mode = RE_MODE.search(md);   result["mode"]   = m_mode.group(1) if m_mode else None
+    m_com  = RE_COMMIT.search(md); result["commit"] = m_com.group(1) if m_com else None
+    m_br   = RE_BRANCH.search(md); result["branch"] = m_br.group(1).strip() if m_br else None
 
-    for code, _name, score in RE_SUB_ROW.findall(md):
-        result["subcriteria"][code] = int(score)
-
-    # Metadata from header.
-    m_mode = RE_MODE.search(md);     result["mode"]   = m_mode.group(1) if m_mode else None
-    m_com  = RE_COMMIT.search(md);   result["commit"] = m_com.group(1) if m_com else None
-    m_br   = RE_BRANCH.search(md);   result["branch"] = m_br.group(1).strip() if m_br else None
-
+    # --- findings ---
     findings: List[Dict[str, Any]] = []
-    for m_find in RE_FINDING.finditer(md):
-        kind = "critical" if m_find.group(1) == "C" else "warning"
-        cat = m_find.group(3)
-        title = m_find.group(4).strip()
-        start = m_find.end()
-        next_heading = re.search(r"^###\s", md[start:], re.MULTILINE)
-        block = md[start : start + (next_heading.start() if next_heading else len(md) - start)]
 
-        m_where = RE_WHERE.search(block)
-        where = m_where.group(1).strip() if m_where else ""
-        m_sev = RE_SEVERITY.search(block)
-        severity = m_sev.group(1).lower() if m_sev else ("high" if kind == "critical" else "medium")
-        m_fix = RE_FIX.search(block)
-        fix = m_fix.group(1).strip() if m_fix else ""
+    if result["version"] == "v2":
+        # v2 finding format: `### 1. [SEC/Confidentiality] Title here`
+        for m_find in RE_FINDING_V2.finditer(md):
+            cat_full = m_find.group(1).strip()              # e.g. "SEC/Confidentiality"
+            title = m_find.group(2).strip()
+            cat_top = cat_full.split("/", 1)[0]              # "SEC"
+            start = m_find.end()
+            next_heading = re.search(r"^###?\s|^##\s", md[start:], re.MULTILINE)
+            block = md[start : start + (next_heading.start() if next_heading else len(md) - start)]
 
-        findings.append({
-            "kind": kind,
-            "category": cat,
-            "title": title,
-            "where": where,
-            "severity": severity,
-            "fix": fix,
-            "fingerprint": fingerprint(cat, title, where),
-        })
+            m_where = RE_WHERE.search(block)
+            where = m_where.group(1).strip() if m_where else ""
+            m_sev = RE_SEVERITY.search(block)
+            severity = m_sev.group(1).lower() if m_sev else "medium"
+            m_fix = RE_FIX.search(block)
+            fix = m_fix.group(1).strip() if m_fix else ""
+            kind = "critical" if severity == "high" else "warning"
+
+            findings.append({
+                "kind": kind,
+                "category": cat_top,
+                "category_full": cat_full,
+                "title": title,
+                "where": where,
+                "severity": severity,
+                "fix": fix,
+                "fingerprint": fingerprint(cat_top, title, where),
+            })
+    else:
+        for m_find in RE_FINDING.finditer(md):
+            kind = "critical" if m_find.group(1) == "C" else "warning"
+            cat = m_find.group(3)
+            title = m_find.group(4).strip()
+            start = m_find.end()
+            next_heading = re.search(r"^###\s", md[start:], re.MULTILINE)
+            block = md[start : start + (next_heading.start() if next_heading else len(md) - start)]
+
+            m_where = RE_WHERE.search(block)
+            where = m_where.group(1).strip() if m_where else ""
+            m_sev = RE_SEVERITY.search(block)
+            severity = m_sev.group(1).lower() if m_sev else ("high" if kind == "critical" else "medium")
+            m_fix = RE_FIX.search(block)
+            fix = m_fix.group(1).strip() if m_fix else ""
+
+            findings.append({
+                "kind": kind,
+                "category": cat,
+                "title": title,
+                "where": where,
+                "severity": severity,
+                "fix": fix,
+                "fingerprint": fingerprint(cat, title, where),
+            })
+
     result["findings"] = findings
     return result
 

@@ -117,32 +117,74 @@ rax shines when: large codebase, longitudinal tracking, you want to
 know how confident the score is, and you understand the difference
 between "90% CI" and "exact number".
 
-## Quick start
+## Two ways to use rax
+
+**1. As a Claude Code skill (recommended).** rax ships a `SKILL.md` that triggers on
+"audit my code", "score my codebase", "review this app", etc. The audit runs with
+intervals, ABSTAINED rows, and the v2 honesty footer.
+
+**2. As a first-class CLI.** Install the `rax` binary and call it directly:
 
 ```bash
-# 1. clone + install
-git clone https://github.com/yourorg/rax
-cd rax
-pip install -r requirements.txt    # numpy, pyyaml, jsonschema, mapie, pytest
+# Install (once per machine)
+git clone https://github.com/yourorg/rax && cd rax
+pip install -r requirements.txt
+bash install.sh                          # symlinks bin/rax onto PATH
+python scripts/conformal.py --calibrate  # fit the conformal calibrator
+python scripts/doctor.py                 # health check
 
-# 2. fit the conformal calibrator on the bundled corpus
-python scripts/conformal.py --calibrate
+# Audit (per-project)
+cd /path/to/your-react-app
+rax audit --mode=quick                                # pre-commit
+rax audit                                             # diff vs baseline (default; pre-push)
+rax audit --mode=full --save                          # full audit, saves baseline
+rax audit --profile=fintech --mode=full               # fintech-weighted
+rax audit --mode=focused --category=Security          # one ISO characteristic, deeply
 
-# 3. audit a target repo
-bash scripts/deterministic_layer.sh /path/to/repo
-python scripts/build_prompt.py --output /tmp/rax-prompt.txt
-
-# 4. (optional) run the multi-judge panel — needs API keys
-ANTHROPIC_API_KEY=... OPENAI_API_KEY=... GOOGLE_API_KEY=... \
-  python scripts/judge_panel.py --prompt-file /tmp/rax-prompt.txt --mode quick
-
-# 5. health check
-python scripts/doctor.py
+# Query results
+rax score                          # headline interval + median + delta
+rax scores                         # per-ISO-characteristic table
+rax pending                        # open findings
+rax delta                          # what changed vs baseline
+rax show latest                    # full report
+rax history --limit 10             # past audits
 ```
 
-For commands and slash-skill flows, see [docs/README-v1.md](./docs/README-v1.md).
+When `claude` is on PATH, `rax audit` runs the deterministic layer first (Semgrep,
+ESLint, tsc, madge, jscpd, npm audit) then hands the findings + prompt to Claude
+Code. When `claude` is not on PATH, it prints the composed prompt for you to paste
+into any Claude Code UI.
+
+`rax audit` flags:
+
+| Flag | Default | Meaning |
+|---|---|---|
+| `--mode {quick,diff,focused,full}` | `diff` | scope; `full` runs the multi-judge panel |
+| `--profile NAME` | `consumer-app` | weights — see profiles section below |
+| `--category NAME` | — | required with `--mode=focused` |
+| `--save` | off | promote the result to baseline after the audit |
+| `--no-deterministic` | off | skip Semgrep/ESLint/tsc/madge/jscpd/npm audit (LLM-only) |
 
 ## Commands at a glance
+
+**User-facing (the CLI you actually run):**
+
+| Action | Command |
+|---|---|
+| Audit | `rax audit [--mode] [--profile] [--category] [--save] [--no-deterministic]` |
+| Headline | `rax score` |
+| Per-category table | `rax scores` |
+| Movement vs baseline | `rax delta` |
+| Findings still open | `rax pending [--category C] [--severity S]` |
+| Findings fixed since baseline | `rax fixed` |
+| Findings introduced since baseline | `rax new` |
+| Show a report | `rax show [latest\|<id>] [--format full\|summary\|scores\|raw]` |
+| Past audits | `rax history [--limit N]` |
+| Save baseline | `rax baseline save` |
+| Reset baseline | `rax baseline reset` |
+| Health check | `rax doctor` |
+
+**Maintainer / power-user (call directly only when debugging the pipeline):**
 
 | Action | Command |
 |---|---|
