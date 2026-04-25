@@ -193,3 +193,71 @@ def test_parse_semgrep_ignores_invalid_metadata_iso_sub_id(tmp_path):
     ]}))
     findings = pd.parse_semgrep(str(semgrep_out))
     assert findings[0]["iso_sub_id"] == "ISO_REL_FAULT"
+
+
+def test_parse_semgrep_survives_non_dict_metadata(tmp_path):
+    """Third-party rule packs sometimes emit `metadata` as a non-dict.
+    The parser must not crash with AttributeError."""
+    import json
+
+    import scripts.parse_deterministic as pd
+
+    semgrep_out = tmp_path / "semgrep.json"
+    semgrep_out.write_text(json.dumps({"results": [
+        {
+            "check_id": "third-party.rule",
+            "path": "x.tsx",
+            "start": {"line": 1},
+            "extra": {"severity": "ERROR", "metadata": "not-a-dict"},
+        },
+        {
+            "check_id": "another.rule",
+            "path": "x.tsx",
+            "start": {"line": 2},
+            "extra": {"severity": "WARNING", "metadata": ["array", "form"]},
+        },
+        {
+            "check_id": "third.rule",
+            "path": "x.tsx",
+            "start": {"line": 3},
+            "extra": {"severity": "INFO", "metadata": 42},
+        },
+    ]}))
+    # Must not raise.
+    findings = pd.parse_semgrep(str(semgrep_out))
+    assert len(findings) == 3
+    for f in findings:
+        assert f["iso_sub_id"].startswith("ISO_")
+
+
+def test_parse_semgrep_survives_dict_fix_field(tmp_path):
+    """Semgrep extended output can ship `extra.fix` as a dict.
+    Slicing a dict raises TypeError; coerce to "" instead."""
+    import json
+
+    import scripts.parse_deterministic as pd
+
+    semgrep_out = tmp_path / "semgrep.json"
+    semgrep_out.write_text(json.dumps({"results": [
+        {
+            "check_id": "rule.with.dict.fix",
+            "path": "x.tsx",
+            "start": {"line": 1},
+            "extra": {
+                "severity": "ERROR",
+                "fix": {"message": "rewrite this", "lines": [1, 2, 3]},
+            },
+        },
+        {
+            "check_id": "rule.with.string.fix",
+            "path": "x.tsx",
+            "start": {"line": 2},
+            "extra": {"severity": "WARNING", "fix": "use Foo.bar()"},
+        },
+    ]}))
+    findings = pd.parse_semgrep(str(semgrep_out))
+    assert len(findings) == 2
+    # Dict fix → empty string (not crash, not str(dict)).
+    assert findings[0]["fix_hint"] == ""
+    # String fix → preserved.
+    assert findings[1]["fix_hint"] == "use Foo.bar()"

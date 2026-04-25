@@ -106,6 +106,46 @@ def test_v2_category_medians_parsed():
     r = parse_report(V2_REPORT)
     assert r["categories"]["Security"] == 4.2
     assert r["categories"]["Maintainability"] == 6.2
+    # ABSTAINED rows are excluded from both `categories` and
+    # `category_intervals` — the Overall aggregator depends on it.
+    assert "Reliability" not in r["categories"]
+    assert "Reliability" not in r["category_intervals"]
+
+
+def test_v2_overall_without_median_derives_midpoint():
+    """Claude sometimes omits or wraps the `median <X>` annotation.
+    parse_report must derive (lo + hi) / 2 rather than raise."""
+    md = """\
+# rax audit
+
+## Overall: [6.0, 8.0]/10
+
+| ISO Characteristic | CI 90%      | Median | Confidence |
+|--------------------|-------------|--------|------------|
+| Security           | [5.0, 7.0]  | 6.0    | high       |
+"""
+    r = parse_report(md)
+    assert r["version"] == "v2"
+    assert r["interval"] == [6.0, 8.0]
+    assert r["overall"] == 7.0  # midpoint derived
+
+
+def test_v2_overall_with_wrapped_median_still_parses():
+    """Median on a different line from the bracket — still resolved
+    via the secondary regex search over the trailing context."""
+    md = """\
+# rax audit
+
+## Overall: [6.4, 8.1]/10
+  (90% CI, median 7.3)
+
+| ISO Characteristic | CI 90%       | Median | Confidence |
+|--------------------|--------------|--------|------------|
+| Security           | [3.5, 5.0]   | 4.2    | high       |
+"""
+    r = parse_report(md)
+    assert r["interval"] == [6.4, 8.1]
+    assert r["overall"] == 7.3
 
 
 def test_v2_findings_parsed_with_iso_subchars():

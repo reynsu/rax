@@ -168,10 +168,17 @@ RE_FINDING = re.compile(
 
 # v2 patterns. Reports place the overall as e.g.:
 #   `## Overall: [6.4, 8.1]/10  (90% CI, median 7.3)`
+# Two patterns: one for the [lo, hi] bracket (mandatory), one for the
+# `median <X>` annotation (optional — Claude sometimes wraps it to the
+# next line, sometimes omits it entirely; if missing we derive
+# (lo + hi) / 2). Splitting also avoids a single regex with `.*?` that
+# would otherwise need DOTALL semantics over a multiline header.
 RE_OVERALL_V2 = re.compile(
-    r"^##\s*Overall:\s*\[\s*([0-9]+\.[0-9]+)\s*,\s*([0-9]+\.[0-9]+)\s*\]\s*/\s*10"
-    r".*?median\s+([0-9]+\.[0-9]+)",
-    re.MULTILINE | re.IGNORECASE,
+    r"^##\s*Overall:\s*\[\s*([0-9]+\.[0-9]+)\s*,\s*([0-9]+\.[0-9]+)\s*\]\s*/\s*10",
+    re.MULTILINE,
+)
+RE_OVERALL_V2_MEDIAN = re.compile(
+    r"median\s+([0-9]+\.[0-9]+)", re.IGNORECASE,
 )
 # v2 category table row:
 #   `| Security | [3.5, 5.0] | 4.2 | high | -0.4 |`
@@ -253,7 +260,15 @@ def parse_report(md: str) -> Dict[str, Any]:
 
     if m_v2:
         result["version"] = "v2"
-        lo, hi, median = float(m_v2.group(1)), float(m_v2.group(2)), float(m_v2.group(3))
+        lo, hi = float(m_v2.group(1)), float(m_v2.group(2))
+        # Look for the median annotation in the next ~200 chars after the
+        # bracket. If present we use it; if not (Claude wrapped the line,
+        # or omitted the annotation), we derive (lo + hi) / 2 as a safe
+        # fallback. A single-line bracket without a median is still a
+        # valid v2 report.
+        tail = md[m_v2.end(): m_v2.end() + 200]
+        m_med = RE_OVERALL_V2_MEDIAN.search(tail)
+        median = float(m_med.group(1)) if m_med else round((lo + hi) / 2, 2)
         result["overall"] = median
         result["interval"] = [lo, hi]
 
@@ -444,6 +459,14 @@ def save_baseline_from_report(root: Path, report_path: Path,
         "findings": parsed["findings"],
         "report_path": _safe_rel(report_path, root),
         "mode": parsed.get("mode"),
+        # v2-only fields. Persisting these lets `rax delta` against a v2
+        # baseline show interval-overlap verdicts ("likely regression",
+        # "uncertain") instead of just the median delta.
+        "report_version": parsed.get("version"),
+        "interval": parsed.get("interval"),
+        "category_intervals": parsed.get("category_intervals", {}),
+        "profile": parsed.get("profile"),
+        "rubric": parsed.get("rubric"),
     }
 
     ensure_dirs(root)

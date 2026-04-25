@@ -64,6 +64,8 @@ ${B}AUDIT${X}
               --save            promote the result to baseline
               --category CAT    used with --mode focused (e.g. Security, Reliability)
               --no-deterministic   skip Semgrep/ESLint/tsc/madge/jscpd/npm audit
+                                   (loses Semgrep's secret/XSS detection;
+                                   not recommended for security-focused runs)
 
 ${B}VIEW${X}
   rax score                    headline overall score + delta vs baseline

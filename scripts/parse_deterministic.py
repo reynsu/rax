@@ -204,12 +204,21 @@ def parse_semgrep(path: Optional[str]) -> List[Dict[str, Any]]:
         # rules set this explicitly). Fall back to the regex mapper for
         # OSS rulesets (p/javascript, p/react, p/owasp-top-ten) where we
         # don't control the YAML.
-        meta_sub = (extra.get("metadata") or {}).get("iso_sub_id")
+        # Defensive isinstance-guard: third-party rule packs sometimes ship
+        # metadata as a non-dict (e.g., a free-form string), which would
+        # crash a naive `.get()`.
+        metadata = extra.get("metadata") if isinstance(extra.get("metadata"), dict) else {}
+        meta_sub = metadata.get("iso_sub_id")
         sub_id = (
             meta_sub
             if isinstance(meta_sub, str) and meta_sub.startswith("ISO_")
             else map_rule_to_iso(rule_id, "semgrep")
         )
+        # `extra.fix` can be either a string (semgrep classic) or a dict
+        # with `{message, lines}` (semgrep extended output). Slicing a dict
+        # raises TypeError; coerce to "" when it's not a string.
+        fix_raw = extra.get("fix")
+        fix_hint = fix_raw[:200] if isinstance(fix_raw, str) else ""
         out.append({
             "iso_sub_id": sub_id,
             "tool": "semgrep",
@@ -218,7 +227,7 @@ def parse_semgrep(path: Optional[str]) -> List[Dict[str, Any]]:
             "line": (r.get("start") or {}).get("line", 0),
             "severity": normalize_severity(extra.get("severity")),
             "message": extra.get("message", ""),
-            "fix_hint": (extra.get("fix") or "")[:200],
+            "fix_hint": fix_hint,
         })
     return out
 
