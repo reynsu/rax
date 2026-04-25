@@ -261,12 +261,18 @@ def parse_report(md: str) -> Dict[str, Any]:
     if m_v2:
         result["version"] = "v2"
         lo, hi = float(m_v2.group(1)), float(m_v2.group(2))
-        # Look for the median annotation in the next ~200 chars after the
-        # bracket. If present we use it; if not (Claude wrapped the line,
-        # or omitted the annotation), we derive (lo + hi) / 2 as a safe
-        # fallback. A single-line bracket without a median is still a
-        # valid v2 report.
-        tail = md[m_v2.end(): m_v2.end() + 200]
+        # Look for the median annotation only inside the same paragraph
+        # as the bracket — everything up to the first blank line
+        # (`\n\n`). This permits a continuation-line wrap
+        # (`## Overall: [a, b]/10\n  (median X)`) but blocks an attacker
+        # who controls later text in the document (e.g., an HTML
+        # comment, footnote, or finding text) from being mistaken for
+        # the overall median. If the annotation is missing we derive
+        # (lo + hi) / 2.
+        para_end = md.find("\n\n", m_v2.end())
+        if para_end == -1:
+            para_end = len(md)
+        tail = md[m_v2.end():para_end]
         m_med = RE_OVERALL_V2_MEDIAN.search(tail)
         median = float(m_med.group(1)) if m_med else round((lo + hi) / 2, 2)
         result["overall"] = median

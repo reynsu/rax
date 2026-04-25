@@ -60,6 +60,13 @@ def _load_yaml(path: Path) -> Dict[str, Any]:
 
 
 def _resolve_path(name: str, profiles_dir: Optional[Path] = None) -> Path:
+    # Profile names map directly to filenames inside `templates/profiles/`.
+    # A value containing path separators or `..` would let a poisoned
+    # baseline (`profile: "../../etc/passwd"`) point the loader outside
+    # the profiles dir. Today no caller does that, but the `profile`
+    # field is now persisted in baselines and could be reloaded later.
+    if not name or "/" in name or "\\" in name or ".." in name:
+        raise ProfileError(f"invalid profile name {name!r}")
     base = profiles_dir or PROFILES_DIR
     candidate = base / f"{name}.yaml"
     if not candidate.exists():

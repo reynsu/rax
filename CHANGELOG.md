@@ -4,6 +4,109 @@ All notable changes to rax. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and dates follow
 ISO 8601.
 
+## [2.0.2] — 2026-04-25
+
+### Headline
+Hardening pass on the skill+CLI surface introduced in 2.0.1, after two
+adversarial review rounds. **No user-visible API changes.** All fixes
+close defense-in-depth gaps that were reachable but had no confirmed
+exploit at release. v2.0.1 users should upgrade.
+
+### Fixed (security / correctness)
+
+**Crash paths in `parse_semgrep`**
+- `metadata` as a non-dict (string / list / int) crashed with
+  `AttributeError`. Now isinstance-guarded.
+  (`scripts/parse_deterministic.py:207`)
+- `extra.fix` as a dict (semgrep extended output) crashed with
+  `TypeError` on slice. Coerced to `""` when not a string.
+  (`scripts/parse_deterministic.py:221`)
+- `extra.message` as a dict could crash downstream string ops. Same
+  isinstance-guard pattern.
+  (`scripts/parse_deterministic.py:229`)
+
+**Prompt-injection surfaces in `invoke_audit.sh`**
+- `--notes` content is now wrapped in a delimited block carrying a
+  per-invocation 16-char hex nonce (`[USER NOTES <nonce>] ... [END USER
+  NOTES <nonce>]`). A previous static `[END USER NOTES]` delimiter could
+  be closed early by including the same marker in `--notes`; with a
+  random nonce, the user cannot predict the closing marker and cannot
+  break out. Belt-and-braces: any literal `[USER NOTES …]` /
+  `[END USER NOTES …]` markers in the user's value are stripped via
+  `sed` before interpolation.
+  (`scripts/invoke_audit.sh:170-194`)
+- `--category` is now allowlisted against the 9 ISO/IEC 25010:2023
+  characteristic names (and their v1 3-letter aliases). Previously
+  arbitrary text could land in `SKILL_HINT` and reach Claude as
+  natural-language instruction.
+  (`scripts/invoke_audit.sh:65-72`)
+- `RAX_OUT_DIR` is now validated against a strict charset regex,
+  rejects `..` segments, and refuses well-known system paths
+  (`/etc`, `/usr`, `/var`, `/sys`, `/proc`, `/bin`, `/sbin`, `/boot`).
+  Previously the value flowed unvalidated into `DET_HINT` (which
+  becomes part of the LLM prompt) and into `mkdir -p`. The pure regex
+  check from 2.0.1 missed both `..` and `/etc/cron.d`-shaped paths.
+  (`scripts/invoke_audit.sh:117-138`)
+
+**Parser robustness in `parse_report`**
+- `RE_OVERALL_V2_MEDIAN` was scanning a 200-byte window after the
+  bracket. An attacker-controlled comment or footnote in that window
+  (e.g., `<!-- median 9.9 -->` after the legitimate header) could be
+  mistaken for the overall median. The search is now bounded to the
+  same paragraph as the bracket (everything up to the first `\n\n`),
+  which keeps the legitimate "median wraps to next line" path working
+  while blocking later-paragraph injections.
+  (`scripts/rax_core.py:264-278`)
+
+**Latent path-traversal in `profiles._resolve_path`**
+- The function previously concatenated `name` with the profiles
+  directory without checking for `..` or path separators. With the
+  baseline now persisting `profile`, a poisoned baseline reloaded
+  later could direct the loader outside `templates/profiles/`. Now
+  rejects `..`, `/`, and `\` in profile names, and empty strings.
+  No current caller exercised the bug; this is preventative.
+  (`scripts/profiles.py:62-70`)
+
+**SKILL.md untrusted-data discipline**
+- The instruction to Claude on treating `rax-deterministic.json` as
+  data-only was extended to mention the user-notes block uses a random
+  nonce per invocation, and that anything outside the matching
+  `[END USER NOTES <nonce>]` is part of the trusted prompt while
+  anything inside is user-controlled.
+  (`SKILL.md:72`)
+
+### Added
+
+- 7 new regression tests in `tests/test_security_hardening.py`:
+  - `test_parse_semgrep_survives_non_dict_metadata`
+  - `test_parse_semgrep_survives_dict_fix_field`
+  - `test_parse_semgrep_survives_dict_message_field`
+  - `test_resolve_path_rejects_traversal`
+  - `test_resolve_path_accepts_valid_names`
+  - `test_invoke_audit_rejects_dotdot_in_rax_out_dir`
+  - `test_invoke_audit_rejects_system_path_in_rax_out_dir`
+  - `test_invoke_audit_notes_nonce_unique_per_run`
+  - `test_parse_report_median_bounded_to_first_paragraph`
+
+### Confirmed safe (after second-pass review)
+
+- `--category` allowlist entries (no spaces, no shell-special chars)
+- `~` in `RAX_OUT_DIR` (double-quoted variable: no tilde expansion)
+- `isinstance(None, dict)` correctly handles `None` metadata
+- `normalize_severity` already safe with `None`/dict/list inputs
+- `profile`/`rubric` baseline fields not consumed by any open/exec path
+- SKILL.md schema validator one-liner has no injection surface
+
+### Tests
+
+122 pass, 3 skipped (LLM-gated). Was 115 pre-fix.
+
+### Migration
+
+Drop-in. Pull v2.0 and re-run any in-flight audit; no API changes.
+
+---
+
 ## [2.0.1] — 2026-04-25
 
 ### Headline

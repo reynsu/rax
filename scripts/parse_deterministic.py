@@ -219,6 +219,11 @@ def parse_semgrep(path: Optional[str]) -> List[Dict[str, Any]]:
         # raises TypeError; coerce to "" when it's not a string.
         fix_raw = extra.get("fix")
         fix_hint = fix_raw[:200] if isinstance(fix_raw, str) else ""
+        # `extra.message` is occasionally emitted as a structured dict by
+        # third-party rule packs. Downstream consumers expect a string;
+        # `dict[:N]` would crash with TypeError, so coerce.
+        msg_raw = extra.get("message", "")
+        message = msg_raw if isinstance(msg_raw, str) else ""
         out.append({
             "iso_sub_id": sub_id,
             "tool": "semgrep",
@@ -226,7 +231,7 @@ def parse_semgrep(path: Optional[str]) -> List[Dict[str, Any]]:
             "file": r.get("path", ""),
             "line": (r.get("start") or {}).get("line", 0),
             "severity": normalize_severity(extra.get("severity")),
-            "message": extra.get("message", ""),
+            "message": message,
             "fix_hint": fix_hint,
         })
     return out
