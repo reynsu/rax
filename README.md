@@ -28,6 +28,17 @@
 
 ---
 
+## Why rax exists
+
+The audit critique that drove rax v2: *"of the 22 findings you reported,
+ESLint detects 10 of them in milliseconds."* Single-LLM auditors
+re-detect what tools already find, then return one number with
+no honest sense of confidence. rax v2 separates the two — deterministic
+linters do the unambiguous work, the LLM panel adds what tools miss
+(architecture, idiom, intent), and a conformal layer turns the result
+into a calibrated 90% interval that you can actually defend in a
+review.
+
 ## What rax does (and doesn't)
 
 **Does**
@@ -54,17 +65,21 @@
 
 | Capability | rax 2.0 | ESLint | tsc | Semgrep | SonarQube | CodeClimate |
 |---|---|---|---|---|---|---|
-| AST-based linting | indirect (uses ESLint) | ✓ | ✗ | ✓ | ✓ | ✓ |
-| Type checking | indirect (uses tsc) | ✗ | ✓ | ✗ | partial | partial |
-| SAST security | partial (Semgrep) | partial | ✗ | ✓ | ✓ | partial |
+| AST-based linting | ✓\* | ✓ | ✗ | ✓ | ✓ | ✓ |
+| Type checking | ✓\* | ✗ | ✓ | ✗ | partial | partial |
+| SAST security | ✓\* | partial | ✗ | ✓ | ✓ | partial |
 | Architecture review | ✓ (LLM panel) | ✗ | ✗ | ✗ | partial | partial |
-| **Confidence intervals** | **✓ (conformal 90%)** | ✗ | ✗ | ✗ | ✗ | ✗ |
-| **Calibration validation** | **✓ (CI gate)** | ✗ | ✗ | ✗ | ✗ | ✗ |
-| **ISO 25010 alignment** | **✓** | ✗ | ✗ | ✗ | partial | partial |
+| 🟢 **Confidence intervals** | **✓ (conformal 90%)** | ✗ | ✗ | ✗ | ✗ | ✗ |
+| 🟢 **Calibration validation** | **✓ (CI gate)** | ✗ | ✗ | ✗ | ✗ | ✗ |
+| 🟢 **ISO 25010 alignment** | **✓** | ✗ | ✗ | ✗ | partial | partial |
 | Multi-LLM consensus | ✓ | n/a | n/a | n/a | ✗ | ✗ |
 | Free for OSS | ✓ | ✓ | ✓ | ✓ (CE) | ✓ (CE) | partial |
 | Speed | ~1-2 min full | seconds | seconds | seconds | minutes | minutes |
 | Cost | $0.5-2/audit (LLM) | $0 | $0 | $0 | $$ | $$ |
+
+<sub>\* delegated — rax invokes the tool from the same row; findings
+are reported under ISO 25010 buckets in rax's report. 🟢 marks the three
+rows where rax offers something none of the alternatives do.</sub>
 
 **Reading.** rax does not compete with ESLint / tsc / Semgrep — it
 delegates to them and reports their findings under ISO 25010 buckets.
@@ -143,48 +158,129 @@ intervals, ABSTAINED rows, and the v2 honesty footer.
 > `~/.claude/skills/rax/`. `install.sh` only symlinks `bin/rax` onto PATH — it
 > does NOT register the skill globally.
 
-**2. As a first-class CLI.** Install the `rax` binary and call it directly:
+**2. As a first-class CLI.** Install the `rax` binary and call it directly.
+
+### First audit in 5 minutes
+
+#### 1. Install + calibrate (one time per machine)
 
 ```bash
-# Install (once per machine)
 git clone https://github.com/reynsu/rax && cd rax
 pip install -r requirements.txt
 bash install.sh                          # symlinks bin/rax onto PATH
 python scripts/conformal.py --calibrate  # fit the conformal calibrator
-rax doctor                               # health check (critical + optional)
-
-# Audit (per-project)
-cd /path/to/your-react-app
-rax audit --mode=quick                                # pre-commit
-rax audit                                             # diff vs baseline (default; pre-push)
-rax audit --mode=full --save                          # full audit, saves baseline
-rax audit --profile=fintech --mode=full               # fintech-weighted
-rax audit --mode=focused --category=Security          # one ISO characteristic, deeply
-
-# Query results — CLI commands print the median for terseness;
-# the FULL report (with intervals + ABSTAINED rows) is in `rax show`.
-rax score                          # median + delta vs baseline
-rax scores                         # per-ISO-characteristic medians
-rax pending                        # open findings
-rax delta                          # what changed vs baseline
-rax show latest                    # FULL report — 90% intervals, ABSTAINED rows, transparency footer
-rax history --limit 10             # past audits
 ```
 
-When `claude` is on PATH, `rax audit` runs the deterministic layer first (Semgrep,
-ESLint, tsc, madge, jscpd, npm audit) then hands the findings + prompt to Claude
-Code. When `claude` is not on PATH, it prints the composed prompt for you to paste
-into any Claude Code UI.
+The calibrate step prints something like:
 
-`rax audit` flags:
+```text
+{
+  "calibration_size": 225,
+  "sub_chars_with_per_sub_q": 3,
+  "global_q": 1.27,
+  "empirical_coverage_on_calibration": 0.94
+}
+```
+
+Coverage near 0.90 means the bundled corpus produced 90% intervals
+that actually contain ground truth ~94% of the time — well inside
+the [0.85, 1.00] band the CI gate enforces.
+
+#### 2. Health check
+
+```bash
+rax doctor
+```
+
+Lists every dependency rax cares about, marking each as critical /
+optional. Fix the critical lines first; the optional ones (e.g.,
+`semgrep not installed`) are warnings, not blockers.
+
+#### 3. Run the audit
+
+```bash
+cd /path/to/your-react-app
+rax audit --mode=quick     # pre-commit / pre-push (~30s)
+```
+
+You'll see four progress lines as the orchestrator does its work:
+
+```text
+▶ rax/audit step 1/3  deterministic layer (semgrep/eslint/tsc/madge/jscpd/npm-audit)
+▶ rax/audit step 2/3  building prompt with rubric-v2 + anchors + deterministic findings
+  prompt: /tmp/rax-<user>/rax-prompt.txt  (1556 lines, 75920 bytes)
+▶ rax/audit step 3/3  invoking Claude Code with the v2 prompt
+```
+
+When `claude` is on PATH, step 3 hands the prompt to Claude Code.
+When it isn't, rax prints the composed prompt for you to paste into
+any Claude Code UI — same fallback as v1.
+
+#### 4. Read the report
+
+```bash
+rax show latest
+```
+
+Prints the full v2 report. Header → overall interval → per-ISO
+table → critical findings → warnings → notes → honesty footer:
+
+```text
+# rax audit — 2026-04-25 · abc1234 · main
+
+**Profile:**     consumer-app (default)
+**Mode:**        quick
+**Rubric:**      rax-v2.0.0
+**Calibration:** empirical coverage 94% (target band 85–95%)
+**Panel:**       claude-opus-4-7 · gpt-4o · gemini-1.5-pro
+**Tools (det):** Semgrep · ESLint · tsc · madge · jscpd · npm audit
+
+## Overall: [6.4, 8.1]/10  (90% CI, median 7.3)
+vs baseline [6.6, 8.2]: overlap 76%  → no significant change
+
+| ISO Characteristic    | CI 90%       | Median | Confidence | Δ vs baseline |
+|-----------------------|--------------|--------|------------|---------------|
+| Security              | [3.5, 5.0]   | 4.2    | high       | -0.4 (regr.)  |
+| Maintainability       | [5.0, 7.5]   | 6.2    | medium     | +0.1          |
+| Reliability           | ABSTAINED    | —      | low        | —             |
+| Interaction Capability| [6.4, 8.1]   | 7.3    | high       | +0.0          |
+```
+
+Use `rax show latest --format summary` if you only want the header
+and the table; `--format scores` is even shorter.
+
+#### Other audit modes
+
+```bash
+rax audit                                  # diff vs baseline (default)
+rax audit --mode=full --save               # multi-judge × N replicates; promotes baseline
+rax audit --profile=fintech --mode=full    # weights from templates/profiles/fintech.yaml
+rax audit --mode=focused --category=Security  # one ISO characteristic, deeply
+```
+
+Flags:
 
 | Flag | Default | Meaning |
 |---|---|---|
 | `--mode {quick,diff,focused,full}` | `diff` | scope; `full` runs the multi-judge panel |
-| `--profile NAME` | `consumer-app` | weights — see profiles section below |
+| `--profile NAME` | `consumer-app` | weights — see Profiles section |
 | `--category NAME` | — | required with `--mode=focused` |
 | `--save` | off | promote the result to baseline after the audit |
 | `--no-deterministic` | off | skip Semgrep/ESLint/tsc/madge/jscpd/npm audit (LLM-only) |
+
+#### Querying past audits
+
+CLI commands print the median for terseness; the full report (with
+90% intervals + ABSTAINED rows + the transparency footer) is in
+`rax show`.
+
+```bash
+rax score                # median + delta vs baseline
+rax scores               # per-ISO-characteristic medians
+rax pending              # findings still open
+rax delta                # what changed vs baseline
+rax history --limit 10   # past audits
+```
 
 ## Commands at a glance
 
@@ -235,11 +331,55 @@ default ISO 25010 weights:
 
 Define your own by extending one of these via the `extends:` key.
 
+#### What that actually changes
+
+`python demos/phase1_demo.py` runs the same simulated subscores under
+each profile. The same code base scores differently depending on which
+weights you apply:
+
+```text
+profile                 overall
+--------------------------------------------------------------
+internal-tool            6.97    █████████████████████·········
+fintech                  6.78    ████████████████████··········
+consumer-app             6.40    ███████████████████···········
+default                  6.40    ███████████████████···········
+accessibility-critical   5.94    ██████████████████············
+
+Spread (max - min): 1.02 on a [0,10] scale.
+=> Profile choice changes the verdict by 1.02 points for the same codebase.
+```
+
+The simulation has weak a11y (`Inter` ~4) and strong Maintainability
+(~7), so `internal-tool` (which leans on Maintainability) scores
+highest and `accessibility-critical` (which leans on Interaction
+Capability) scores lowest. Pick the profile that matches your domain;
+don't pick to "make the score look better" — that's a code review
+of yourself.
+
 ## How it works
 
 When you run `rax audit`, the CLI orchestrates the entire pipeline below
 for you. Power users can call individual scripts when debugging — see
 the maintainer table in *Commands at a glance*.
+
+The flow, in prose: `rax audit` calls `scripts/invoke_audit.sh`, which
+in turn (1) runs `gather_context.sh` to figure out the framework and
+files in scope, (2) runs `deterministic_layer.sh` over Semgrep / ESLint
+/ tsc / madge / jscpd / npm audit and parses the findings into
+`rax-deterministic.json`, (3) runs `build_prompt.py` to compose a
+prompt out of the rubric, reference-guided anchors, and the
+deterministic findings, and (4) hands that prompt to `claude -p`
+(or prints it for paste-into-Claude when `claude` isn't on PATH).
+The skill (`SKILL.md`) walks Claude through producing a JSON output
+that conforms to `audit-output.schema.json`. From there, `scoring.py`
+blends the deterministic and LLM scores with `α·det + (1-α)·llm`,
+`aggregation.py` runs Quamoco/MAUT plus a Monte Carlo to lift
+sub-characteristic intervals to category and overall, and
+`conformal.py` applies the 90% calibration band. The final report is
+written to disk via `rax report save`.
+
+The diagram below shows the same flow visually:
 
 ```text
 $ rax audit                  ← user types one command (or triggers SKILL.md)
