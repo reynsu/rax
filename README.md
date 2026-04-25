@@ -21,7 +21,10 @@
 > "[6.4, 8.1]/10 (90% CI, median 7.3)". If you need a single exact number to
 > show a stakeholder, rax is the wrong tool.
 
-> The v1 README is preserved at [docs/README-v1.md](./docs/README-v1.md).
+> **Coming from v1?** Read [docs/v1-to-v2.md](./docs/v1-to-v2.md) — full
+> migration guide with side-by-side architecture, the v1→ISO category
+> mapping table, and a step-by-step upgrade path. The v1 README is
+> preserved at [docs/README-v1.md](./docs/README-v1.md).
 
 ---
 
@@ -210,6 +213,22 @@ target codebase
 > The rax corpus does not include human-validated ground truth;
 > calibration uses proxy signals — synthetic anchors, mined
 > defect-density, cross-LLM consensus. See `references/corpus.md`.
+
+## Documentation index
+
+| Document | Purpose |
+|---|---|
+| [docs/v1-to-v2.md](./docs/v1-to-v2.md) | Detailed v1→v2 migration: side-by-side architecture, category mapping, upgrade steps |
+| [CHANGELOG.md](./CHANGELOG.md) | Release-format diff between versions |
+| [references/iso25010-mapping.md](./references/iso25010-mapping.md) | ISO/IEC 25010:2023 mapping with bidirectional v1 ↔ v2 table |
+| [references/rubric-v2.md](./references/rubric-v2.md) | The 41 sub-characteristics, anchors at 3/6/8/10, deterministic-coverage α |
+| [references/deterministic-coverage.md](./references/deterministic-coverage.md) | Per-sub-char α + tools that cover each |
+| [references/corpus.md](./references/corpus.md) | Epistemology of the 4 corpus layers — what each is, what it isn't |
+| [references/report-format.md](./references/report-format.md) | v2 report shape with v1-compat rules |
+| [references/audit-output.schema.json](./references/audit-output.schema.json) | JSON Schema for the LLM-side output |
+| [references/scale-mapping.yaml](./references/scale-mapping.yaml) | 1-4 internal → 1-10 user-visible mapping (per-sub-char overrides) |
+| [prompts/audit-system.md](./prompts/audit-system.md) | The system prompt for the multi-judge panel |
+| [docs/README-v1.md](./docs/README-v1.md) | The v1 README, preserved read-only |
 
 ## License
 
