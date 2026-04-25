@@ -4,6 +4,66 @@ All notable changes to rax. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and dates follow
 ISO 8601.
 
+## [2.0.1] — 2026-04-25
+
+### Headline
+Re-expose the v2 pipeline as a Claude Code skill with a first-class CLI.
+v2.0.0 (the previous release) shipped the new pipeline as standalone Python
+scripts, breaking the v1 invocation pattern. v2.0.1 brings back `rax audit`,
+`rax score`, `rax delta`, etc. — the same UX as v1 — while keeping every
+v2.0.0 internal improvement. **No changes to scoring, calibration, or
+audit semantics.** Pure UX restoration.
+
+### Restored
+- **`SKILL.md` triggers** the same way as v1 — "audit my code", "review
+  this app", "score my codebase", and any mention of `rax`-prefixed
+  CLI commands. SKILL.md was rewritten internally to walk Claude through
+  the v2 workflow (read deterministic findings, score 1-4, output JSON
+  conforming to `audit-output.schema.json`, abstain when uncertain),
+  but the activation surface is identical to v1.
+- **`bin/rax`** is the unified CLI again. Subcommands preserved:
+  `audit`, `score`, `scores`, `delta`, `pending`, `fixed`, `new`, `show`,
+  `history`, `baseline save/reset`, `report save/list/path`, `gather`,
+  `config init`, `doctor`. State lives in `.claude/rax/` exactly as in v1.
+- **`scripts/invoke_audit.sh`** is what `rax audit` runs — same name,
+  same role. Internally it now orchestrates 3 steps before delegating
+  to Claude: (1) gather context, (2) deterministic layer, (3) build
+  prompt. When `claude` is on PATH it invokes `claude -p`; otherwise it
+  prints the composed prompt for the user to paste into any Claude Code
+  UI — same fallback behavior as v1.
+
+### Added (CLI flags only)
+- `rax audit --profile NAME` — pick a stakeholder profile
+  (`consumer-app` default, `fintech`, `internal-tool`,
+  `accessibility-critical`).
+- `rax audit --no-deterministic` — skip the linter chain and let the
+  LLM panel score on its own. Faster, less coverage.
+- `rax audit --category NAME` for `--mode=focused` now accepts ISO
+  characteristic names (`Security`, `Reliability`, `Maintainability`,
+  …) in addition to the v1 3-letter codes (`SEC`, `REL`, `MAINT`).
+
+### Changed
+- **`scripts/rax_core.py:parse_report()`** detects v1 vs v2 reports and
+  produces a unified shape (`version`, `overall`, `interval`,
+  `categories`, `category_intervals`, `findings`, `profile`, `rubric`).
+  Older v1 reports parse identically to before; v2 reports now expose
+  intervals and ISO names. Means `rax delta` against a v1 baseline from
+  a v2 audit works without conversion.
+- **`SKILL.md`** rewritten (~285 lines) with the v2 workflow, ISO
+  sub-characteristic IDs, abstain logic, schema-validated output, and
+  per-profile red flags. Trigger description preserved verbatim.
+
+### Tests
++9 regression tests in `tests/test_rax_core_parse.py` pinning v1 / v2
+parity. Total: 111 pass, 3 skipped (LLM-gated).
+
+### Migration
+Drop-in. If you used `rax audit` in v1, run `bash install.sh` to refresh
+the symlink and `python scripts/conformal.py --calibrate` once. Your
+existing `.claude/rax/` state remains compatible.
+
+---
+
 ## [2.0.0] — 2026-04-25
 
 ### Headline

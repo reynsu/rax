@@ -216,35 +216,51 @@ Define your own by extending one of these via the `extends:` key.
 
 ## How it works
 
+When you run `rax audit`, the CLI orchestrates the entire pipeline below
+for you. Power users can call individual scripts when debugging — see
+the maintainer table in *Commands at a glance*.
+
 ```
-target codebase
+$ rax audit                  ← user types one command (or triggers SKILL.md)
   │
-  ▼
-  scripts/deterministic_layer.sh   ──>  Semgrep / ESLint / tsc / madge / jscpd / npm audit
-  │                                       │
-  │                                       ▼
-  │                                   /tmp/rax-deterministic.json (parsed via parse_deterministic.py)
-  │
-  ▼
-  scripts/build_prompt.py           <──   prompts/audit-system.md  +  references/rubric-v2.md
-  │                                                                +  reference-guided anchors
-  ▼
-  scripts/judge_panel.py            ──>  Claude · GPT-4o · Gemini  (×N replicates @ temp=0.3)
-  │                                       │
-  │                                       ▼
-  │                                   per-judge JSON (validated against audit-output.schema.json)
-  │
-  ▼
-  scripts/scoring.py                 →   HybridScore = α · det + (1-α) · llm
-  │                                       │
-  ▼                                       ▼
-  scripts/aggregation.py             →   Quamoco/MAUT aggregation, sigmoid penalty for criticals
-  │                                       │
-  ▼                                       ▼
-  scripts/conformal.py               →   90% CI per sub-characteristic + Monte Carlo to overall
-  │                                       │
-  ▼                                       ▼
-                                       rax report (intervals, abstentions, transparency footer)
+  └── bin/rax audit
+        │
+        └── scripts/invoke_audit.sh
+              │
+              ├──[1]── scripts/gather_context.sh        framework / files / git context
+              │
+              ├──[2]── scripts/deterministic_layer.sh   semgrep · eslint · tsc
+              │           │                             madge · jscpd · npm audit
+              │           ▼
+              │       parse_deterministic.py  →  $RAX_OUT_DIR/rax-deterministic.json
+              │
+              ├──[3]── scripts/build_prompt.py
+              │           ├── references/rubric-v2.md
+              │           ├── reference-guided anchors (synthetic_anchors/)
+              │           └── deterministic findings JSON
+              │           ▼
+              │       $RAX_OUT_DIR/rax-prompt.txt
+              │
+              └──[4]── claude -p "$PROMPT"   (or: print prompt if claude not on PATH)
+                          │
+                          ▼
+                      SKILL.md  →  Claude reads rubric, scores 1-4 per
+                          │        ISO sub-char, outputs JSON conforming to
+                          │        audit-output.schema.json
+                          ▼
+                      [optional, --mode=full]  scripts/judge_panel.py
+                          │                    Claude · GPT-4o · Gemini × N
+                          ▼
+                      scripts/scoring.py     HybridScore = α·det + (1-α)·llm
+                          ▼
+                      scripts/aggregation.py Quamoco/MAUT + sigmoid penalty
+                          ▼
+                      scripts/conformal.py   90% CI per sub-char + Monte
+                          │                  Carlo to category and overall
+                          ▼
+                      rax report (intervals, abstentions, transparency footer)
+                          ▼
+                      `rax report save --file <path>`  →  .claude/rax/reports/<ts>.md
 ```
 
 ## Honesty footer (always in every report)
@@ -260,7 +276,8 @@ target codebase
 
 | Document | Purpose |
 |---|---|
-| [docs/v1-to-v2.md](./docs/v1-to-v2.md) | Detailed v1→v2 migration: side-by-side architecture, category mapping, upgrade steps |
+| [SKILL.md](./SKILL.md) | The Claude Code skill definition — triggers, workflow, principles, what Claude is told to do during an audit |
+| [docs/v1-to-v2.md](./docs/v1-to-v2.md) | Detailed v1→v2 migration: side-by-side architecture, category mapping, upgrade steps. UX preserved; only the engine changed |
 | [CHANGELOG.md](./CHANGELOG.md) | Release-format diff between versions |
 | [references/iso25010-mapping.md](./references/iso25010-mapping.md) | ISO/IEC 25010:2023 mapping with bidirectional v1 ↔ v2 table |
 | [references/rubric-v2.md](./references/rubric-v2.md) | The 41 sub-characteristics, anchors at 3/6/8/10, deterministic-coverage α |

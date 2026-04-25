@@ -11,8 +11,17 @@
 
 ## TL;DR
 
+> **La UX no cambió.** Sigues usando `rax audit`, `rax score`, `rax delta`,
+> `rax pending`, etc. — los mismos comandos de v1, exactamente la misma
+> activación de skill desde Claude Code. **Lo que cambió es la maquinaria
+> que corre por debajo.** Si nunca pasaste de `rax audit` en v1, podrías
+> instalar v2 mañana y solo notarías que el reporte ahora tiene intervalos.
+
 | Aspecto | v1 | v2 |
 |---|---|---|
+| **Invocación** | `rax audit` o trigger del skill | **igual** |
+| **Comandos CLI** | `rax score`, `delta`, `pending`, `fixed`, `new`, `show`, `history`, `baseline` | **iguales** (con flags nuevos: `--profile`, `--no-deterministic`) |
+| **Activación skill** | "audit my code" / "review this app" / "score my codebase" | **iguales** (mismos triggers en SKILL.md) |
 | Output | Un solo número por categoría (`7.3/10`) | Intervalo con mediana (`[6.4, 8.1]/10, median 7.3`) |
 | Rubric | 11 categorías inventadas (ARC, CQR, RXP, …) | 9 características ISO/IEC 25010:2023 + 41 sub-características |
 | Juez | Un único `claude -p` | Panel multi-juez (Claude + GPT-4o + Gemini) con N réplicas |
@@ -406,41 +415,89 @@ Cada reporte v2 lleva un **footer de transparencia obligatorio**:
 
 ## Migración paso a paso para un usuario v1
 
+Setup (una sola vez):
+
 ```bash
 # 1. Pull v2.0
 git fetch origin && git checkout v2.0
 
-# 2. Instala dependencias nuevas
-pip install -r requirements.txt   # numpy, pyyaml, jsonschema, mapie, pytest
+# 2. Dependencias nuevas
+pip install -r requirements.txt          # numpy, pyyaml, jsonschema, mapie, pytest
 
-# 3. Corre el doctor
-python scripts/doctor.py
-# Soluciona los 'critical' que aparezcan; las warnings opcionales son OK.
+# 3. Re-instala el CLI (mismo comando que v1)
+bash install.sh                          # symlinks bin/rax onto PATH
 
-# 4. Calibra el conformalizer (sólo la primera vez, o tras un `git pull` con corpus changes)
+# 4. Calibra el conformalizer (sólo la primera vez, o tras un git pull con corpus changes)
 python scripts/conformal.py --calibrate
 
-# 5. Audit en modo quick (sin API keys nuevas; cae a single-judge)
-bash scripts/deterministic_layer.sh /path/to/repo
-python scripts/build_prompt.py --output /tmp/rax-prompt.txt
+# 5. Health check
+python scripts/doctor.py                 # o `rax doctor` cuando esté instalado
+```
 
-# 6. Audit en modo full (requiere las 3 API keys)
-ANTHROPIC_API_KEY=... OPENAI_API_KEY=... GOOGLE_API_KEY=... \
-  python scripts/judge_panel.py --prompt-file /tmp/rax-prompt.txt --mode full
+Uso del día a día (idéntico a v1):
 
-# 7. CI: agrega el workflow de calibration drift
+```bash
+# Estos son LOS MISMOS comandos que en v1 — ahora con intervalos por debajo
+rax audit --mode=quick                   # pre-commit
+rax audit                                # diff vs baseline (default; pre-push)
+rax audit --mode=full --save             # full audit + promote baseline
+rax audit --profile=fintech --mode=full  # fintech-weighted (NUEVO en v2)
+
+rax score                                # ahora muestra intervalo + mediana
+rax scores                               # tabla por característica ISO
+rax delta                                # con verdict de overlap-de-intervalos
+rax pending --category=Security          # findings abiertos
+```
+
+Cuando `claude` está en PATH, `rax audit` corre el pipeline completo (deterministic
+layer + LLM panel + conformal). Cuando no, imprime el prompt para pegar en cualquier
+UI Claude Code — exactamente el mismo fallback que v1.
+
+CI opcional:
+
+```bash
+# Drift monitoring para conformal calibration (releases)
 cp .github/workflows/calibration-drift.yml <tu-repo>/.github/workflows/
 ```
+
+API keys opcionales (sólo `--mode=full`):
+
+```bash
+export ANTHROPIC_API_KEY=...   # (igual que v1)
+export OPENAI_API_KEY=...      # NUEVO en v2 — multi-judge panel
+export GOOGLE_API_KEY=...      # NUEVO en v2 — multi-judge panel
+```
+
+Sin las dos nuevas keys, `--mode=full` cae a single-judge con warning explícito.
 
 ---
 
 ## Lo que NO cambió de v1 a v2
 
+- **El shape skill + CLI.** El `SKILL.md` se activa con los mismos triggers
+  ("audit my code" / "review this app" / "score my codebase"). El binario
+  `rax` expone los mismos subcomandos (`audit`, `score`, `scores`, `delta`,
+  `pending`, `fixed`, `new`, `show`, `history`, `baseline`, `report save`).
+  Lo único añadido al CLI son flags opcionales (`--profile`,
+  `--no-deterministic`).
+- **Estado en `.claude/rax/`.** Los reportes, baselines, history index —
+  todo persiste como en v1 vía `scripts/rax_core.py`.
+- **`bin/rax audit` ejecuta `scripts/invoke_audit.sh`** — igual que v1, sólo
+  que ahora ese script orquesta 3 pasos antes de invocar a Claude
+  (gather → deterministic layer → build prompt) en lugar de invocar a
+  Claude directo.
 - La filosofía: "diff modes para reportar progreso longitudinal". v2 lo conserva.
 - El layout `references/rubric.md` + `references/antipatterns.md` (v1 lives en paralelo, no se borraron).
 - La política de "scoring conservador: si dudas, score más bajo".
-- La política de `n/a` vs `deferred` para sub-características inaplicables.
+- La política de `n/a` vs `deferred` (extendida en v2 con `ABSTAINED` para
+  panel disagreement, pero el espíritu es el mismo).
 - React/RN sigue siendo el único stack soportado.
+
+> **Resumen.** Si lo único que usas es `rax audit`, lo único que vas a
+> notar es que el reporte trae intervalos en lugar de números puntuales,
+> y que sale un footer de transparencia. Todo lo demás se siente igual
+> hasta que decidas usar las features nuevas (`--profile`, `--mode=full`,
+> conformal calibration en CI, etc.).
 
 ---
 
