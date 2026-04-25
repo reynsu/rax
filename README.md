@@ -75,11 +75,20 @@ review.
 | Multi-LLM consensus | ✓ | n/a | n/a | n/a | ✗ | ✗ |
 | Free for OSS | ✓ | ✓ | ✓ | ✓ (CE) | ✓ (CE) | partial |
 | Speed | ~1-2 min full | seconds | seconds | seconds | minutes | minutes |
-| Cost | $0.5-2/audit (LLM) | $0 | $0 | $0 | $$ | $$ |
+| Cost | **$0 on a Claude Code plan**; ~$0.30 quick / ~$2-3 full via direct API | $0 | $0 | $0 | $$ | $$ |
 
 <sub>\* delegated — rax invokes the tool from the same row; findings
 are reported under ISO 25010 buckets in rax's report. 🟢 marks the three
 rows where rax offers something none of the alternatives do.</sub>
+
+> **Cost note.** When you trigger rax through Claude Code (the `SKILL.md`
+> path — "audit my code"), the LLM calls run inside your Claude Code
+> subscription (Pro / Max / Team / Enterprise) and there is **no
+> per-audit charge**. The dollar figures above apply only when you run
+> `--mode=full` via the direct provider APIs (`ANTHROPIC_API_KEY` +
+> `OPENAI_API_KEY` + `GOOGLE_API_KEY`) outside Claude Code. Rax's
+> deterministic layer (Semgrep / ESLint / tsc / madge / jscpd / npm
+> audit) costs $0 either way — those tools run locally.
 
 **Reading.** rax does not compete with ESLint / tsc / Semgrep — it
 delegates to them and reports their findings under ISO 25010 buckets.
@@ -111,8 +120,11 @@ the table says so.
   disagrees by more than ~1.5 points, rax says ABSTAINED instead of
   inventing a number.
 - **React / React Native only.** Vue / Angular / Svelte are not audited.
-- **LLM cost.** Full mode runs 3 models × 5 replicates = 15 calls. Use
-  quick mode in CI; full mode for release reviews.
+- **LLM cost depends on how you invoke rax.** Run via the Claude Code
+  skill: $0 incremental (your Claude Code plan covers it). Run
+  `--mode=full` via direct API keys: ~$2-3 per audit (3 models × 5
+  replicates = 15 calls). Use `--mode=quick` in CI either way; reserve
+  `--mode=full` for release reviews.
 - **No IDE integration yet.** Run from CLI; consume the JSON.
 - **Not certified for regulated industries.** rax is *inspired by* ISO
   25010; it is not an ISO certification.
@@ -457,9 +469,21 @@ run locally before tagging — that mode is too expensive for every PR.
 ## FAQ
 
 **How much does an audit cost?**
-- `--mode=quick` (default for CI): ~$0 with no API keys (deterministic-only); a few cents with `ANTHROPIC_API_KEY`.
-- `--mode=full`: $0.50–$2 per run (3 models × 5 replicates = 15 LLM calls).
-- A daily quick + weekly full schedule on a single repo runs to roughly **$10–25/month**.
+
+It depends on how you invoke rax. There are two paths:
+
+- **Via the Claude Code skill ("audit my code" / `rax audit` while Claude Code is on PATH).** The LLM calls run inside your Claude Code plan (Pro, Max, Team, Enterprise), so audits cost **$0 incremental** — they consume the same allowance you already pay for. The deterministic layer (Semgrep / ESLint / tsc / madge / jscpd / npm audit) runs locally and costs $0 too. **For most users this is the right path: zero per-audit cost on top of a plan you already have.**
+
+- **Via direct provider APIs** (you set `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GOOGLE_API_KEY` and run rax outside Claude Code, e.g. on a CI runner). Pay-per-token applies:
+  - `--mode=quick` (1 model × 1 call): ~$0.30 cold, less with prompt caching.
+  - `--mode=full` (3 models × 5 replicates = 15 calls): ~$2-3 with prompt caching, up to $3.50 on a large codebase without caching.
+  - A daily quick + weekly full schedule on a single repo runs to roughly **$20-25/month** at direct-API rates.
+
+The deterministic layer is always free either way.
+
+**Do I need API keys to run rax?**
+
+No, if you use the Claude Code skill path (recommended). Yes, only if you want to run rax outside Claude Code or if you want `--mode=full`'s multi-judge panel (which uses GPT-4o and Gemini in addition to Claude — Claude Code only covers Claude). Without keys, `--mode=full` falls back to single-judge with an explicit warning.
 
 **Are runs reproducible?**
 - The deterministic layer is fully reproducible — same inputs, same findings.
