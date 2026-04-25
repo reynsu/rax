@@ -117,21 +117,41 @@ rax shines when: large codebase, longitudinal tracking, you want to
 know how confident the score is, and you understand the difference
 between "90% CI" and "exact number".
 
-## Two ways to use rax
+## Quick start
+
+### Prerequisites
+
+- **Python 3.10+** (the conformal layer, scoring, and rax_core).
+- **`claude` CLI** (optional but recommended) — without it, `rax audit` prints
+  the composed prompt for you to paste into any Claude Code UI.
+- **Node tooling** (optional, opt-in per audit) — Semgrep, ESLint, tsc, madge,
+  jscpd, npm audit. Install whichever you have; `rax audit` skips missing
+  tools and records them under `tools_failed` rather than aborting.
+- **API keys** (optional, only for `--mode=full`) — `ANTHROPIC_API_KEY`,
+  `OPENAI_API_KEY`, `GOOGLE_API_KEY`. Without these, `--mode=full` falls back
+  to single-judge with an explicit warning.
+
+### Two ways to use rax
 
 **1. As a Claude Code skill (recommended).** rax ships a `SKILL.md` that triggers on
 "audit my code", "score my codebase", "review this app", etc. The audit runs with
 intervals, ABSTAINED rows, and the v2 honesty footer.
 
+> **Skill registration.** Claude Code auto-discovers `SKILL.md` when you `cd` into
+> the cloned `rax` directory before invoking it. For project-wide availability,
+> copy `SKILL.md`, `scripts/`, `references/`, `prompts/`, and `templates/` into
+> `~/.claude/skills/rax/`. `install.sh` only symlinks `bin/rax` onto PATH — it
+> does NOT register the skill globally.
+
 **2. As a first-class CLI.** Install the `rax` binary and call it directly:
 
 ```bash
 # Install (once per machine)
-git clone https://github.com/yourorg/rax && cd rax
+git clone https://github.com/reynsu/rax && cd rax
 pip install -r requirements.txt
 bash install.sh                          # symlinks bin/rax onto PATH
 python scripts/conformal.py --calibrate  # fit the conformal calibrator
-python scripts/doctor.py                 # health check
+rax doctor                               # health check (critical + optional)
 
 # Audit (per-project)
 cd /path/to/your-react-app
@@ -141,12 +161,13 @@ rax audit --mode=full --save                          # full audit, saves baseli
 rax audit --profile=fintech --mode=full               # fintech-weighted
 rax audit --mode=focused --category=Security          # one ISO characteristic, deeply
 
-# Query results
-rax score                          # headline interval + median + delta
-rax scores                         # per-ISO-characteristic table
+# Query results — CLI commands print the median for terseness;
+# the FULL report (with intervals + ABSTAINED rows) is in `rax show`.
+rax score                          # median + delta vs baseline
+rax scores                         # per-ISO-characteristic medians
 rax pending                        # open findings
 rax delta                          # what changed vs baseline
-rax show latest                    # full report
+rax show latest                    # FULL report — 90% intervals, ABSTAINED rows, transparency footer
 rax history --limit 10             # past audits
 ```
 
@@ -220,7 +241,7 @@ When you run `rax audit`, the CLI orchestrates the entire pipeline below
 for you. Power users can call individual scripts when debugging — see
 the maintainer table in *Commands at a glance*.
 
-```
+```text
 $ rax audit                  ← user types one command (or triggers SKILL.md)
   │
   └── bin/rax audit
