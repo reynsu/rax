@@ -24,10 +24,13 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import ipaddress
 import json
 import os
+import socket
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 import uuid
 from datetime import datetime, timezone
@@ -40,6 +43,41 @@ CONFIG_FILE = CONFIG_DIR / "telemetry.json"
 QUEUE_FILE = CONFIG_DIR / "telemetry_queue.jsonl"
 
 DEFAULT_ENDPOINT = "https://example.invalid/rax/telemetry"
+
+
+def _validate_endpoint(url: str, allow_private: bool = False) -> str:
+    """Reject anything that isn't an https:// URL pointing at a public host.
+
+    `allow_private` is False by default to make SSRF to internal services
+    (192.168.x.x, 10.x, link-local, loopback) impossible without an
+    explicit override.
+    """
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme != "https":
+        raise ValueError(
+            f"telemetry endpoint must use https://; got scheme={parsed.scheme!r}"
+        )
+    if not parsed.hostname:
+        raise ValueError("telemetry endpoint missing hostname")
+
+    if allow_private:
+        return url
+
+    # Block obvious RFC-1918 / loopback / link-local literals. DNS resolution
+    # to a private IP is not blocked here (would require pinning a resolver),
+    # but is documented in docs/telemetry-schema.md.
+    try:
+        ip = ipaddress.ip_address(parsed.hostname)
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+            raise ValueError(
+                f"telemetry endpoint host {ip} is in a private/reserved range; "
+                "set --allow-private if this is intentional"
+            )
+    except ValueError as exc:
+        if "private" in str(exc) or "reserved" in str(exc):
+            raise
+        # Hostname is a name, not an IP literal — accepted.
+    return url
 
 
 def _load_config() -> Dict[str, Any]:
@@ -60,11 +98,14 @@ def is_enabled() -> bool:
     return bool(_load_config().get("enabled"))
 
 
-def enable(endpoint: Optional[str] = None) -> None:
+def enable(endpoint: Optional[str] = None, allow_private: bool = False) -> None:
     cfg = _load_config()
     cfg["enabled"] = True
     if endpoint:
-        cfg["endpoint"] = endpoint
+        cfg["endpoint"] = _validate_endpoint(endpoint, allow_private=allow_private)
+    elif cfg.get("endpoint") and cfg["endpoint"] != DEFAULT_ENDPOINT:
+        # Re-validate the persisted endpoint each time we enable.
+        cfg["endpoint"] = _validate_endpoint(cfg["endpoint"], allow_private=allow_private)
     _save_config(cfg)
     print(
         "Telemetry ENABLED.\n"
@@ -177,19 +218,25 @@ def main(argv: Optional[List[str]] = None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     en = sub.add_parser("enable")
     en.add_argument("--endpoint", default=None)
+    en.add_argument("--allow-private", action="store_true",
+                    help="permit private/loopback/link-local hosts (off by default)")
     sub.add_parser("disable")
     sub.add_parser("status")
     sub.add_parser("purge")
     args = ap.parse_args(argv)
 
-    if args.cmd == "enable":
-        enable(args.endpoint)
-    elif args.cmd == "disable":
-        disable()
-    elif args.cmd == "status":
-        status()
-    elif args.cmd == "purge":
-        purge()
+    try:
+        if args.cmd == "enable":
+            enable(args.endpoint, allow_private=args.allow_private)
+        elif args.cmd == "disable":
+            disable()
+        elif args.cmd == "status":
+            status()
+        elif args.cmd == "purge":
+            purge()
+    except ValueError as exc:
+        print(f"telemetry: {exc}", file=sys.stderr)
+        return 2
     return 0
 
 

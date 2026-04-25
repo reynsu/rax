@@ -28,7 +28,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -60,7 +60,7 @@ def _proxy_score_for_cross_llm(scores: Dict[str, Any]) -> Optional[float]:
     return float(np.median(medians))
 
 
-def assemble_calibration_set() -> Dict[str, List[Tuple[float, float]]]:
+def assemble_calibration_set() -> Dict[str, List[tuple[float, float]]]:
     """Build {sub_id: [(predicted, ground_truth_proxy), ...]}.
 
     Without a real predictor (no LLM calls in this offline build), we
@@ -70,7 +70,7 @@ def assemble_calibration_set() -> Dict[str, List[Tuple[float, float]]]:
     a proxy. Live runs should populate (predicted) from real panel output.
     """
     rng = np.random.default_rng(42)
-    by_sub: Dict[str, List[Tuple[float, float]]] = {}
+    by_sub: Dict[str, List[tuple[float, float]]] = {}
 
     # 1. anchors
     if ANCHORS_DIR.exists():
@@ -135,7 +135,7 @@ class RaxConformalizer:
         self.fitted_at: Optional[str] = None
         self.n_per_sub: Dict[str, int] = {}
 
-    def fit(self, calibration: Dict[str, List[Tuple[float, float]]]) -> "RaxConformalizer":
+    def fit(self, calibration: Dict[str, List[tuple[float, float]]]) -> "RaxConformalizer":
         from datetime import datetime, timezone
 
         all_residuals: List[float] = []
@@ -166,13 +166,13 @@ class RaxConformalizer:
     def quantile_for(self, sub_id: str) -> float:
         return self.q_per_sub.get(sub_id, self.global_q)
 
-    def predict_interval(self, score: float, sub_id: str = "") -> Tuple[float, float]:
+    def predict_interval(self, score: float, sub_id: str = "") -> tuple[float, float]:
         q = self.quantile_for(sub_id)
         lo = float(max(0.0, score - q))
         hi = float(min(10.0, score + q))
         return lo, hi
 
-    def empirical_coverage(self, calibration: Dict[str, List[Tuple[float, float]]]) -> float:
+    def empirical_coverage(self, calibration: Dict[str, List[tuple[float, float]]]) -> float:
         """Fraction of (pred, gt) where gt ∈ [pred-q, pred+q]."""
         total = covered = 0
         for sub_id, pairs in calibration.items():

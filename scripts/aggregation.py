@@ -134,16 +134,19 @@ class QuamocoAggregator:
 
     def aggregate_intervals_to_category(
         self,
-        subscore_intervals: Dict[str, "tuple[float, float]"],
+        subscore_intervals: Dict[str, tuple[float, float]],
         weights: Dict[str, float],
         n_samples: int = 10000,
         rng: Optional["np.random.Generator"] = None,
-    ) -> "tuple[float, float, float]":
+    ) -> tuple[float, float, float]:
         """Monte Carlo propagation of per-sub-char intervals to a category
         median + 5/95 percentile band.
 
-        For each sample: draw uniformly from each sub-char's interval, then
-        run `aggregate_to_category`. Return (median, p5, p95).
+        Fast path: when every sub-char in `common` resolves to the linear
+        utility, the entire computation collapses to a single vectorised
+        numpy expression — no per-sample Python call. Falls back to the
+        general per-sample loop only when at least one sub-char uses
+        sigmoid (or any custom callable utility).
 
         Uniform draws are conservative — if richer densities become available
         from the LLM panel later, swap them in here.
@@ -157,14 +160,26 @@ class QuamocoAggregator:
             raise ValueError("no overlap between subscore_intervals and weights")
 
         intervals = np.array([subscore_intervals[k] for k in common], dtype=float)
-        samples = np.zeros((n_samples, len(common)), dtype=float)
-        for i, (lo, hi) in enumerate(intervals):
-            samples[:, i] = rng.uniform(lo, hi, size=n_samples)
+        w = np.array([weights[k] for k in common], dtype=float)
+        total_w = float(w.sum())
+        if total_w <= 0.0:
+            raise ValueError("total weight must be positive")
 
-        out = np.empty(n_samples, dtype=float)
-        for i in range(n_samples):
-            row = {k: float(samples[i, j]) for j, k in enumerate(common)}
-            out[i] = self.aggregate_to_category(row, weights)
+        # Sample once. Both paths reuse this draw.
+        samples = rng.uniform(
+            intervals[:, 0], intervals[:, 1], size=(n_samples, len(common))
+        )
+
+        all_linear = all(self.utility_for(k) is linear_utility for k in common)
+        if all_linear:
+            # U(s) = s/10 → category = (Σ U(s_i)·w_i / Σ w_i) · 10
+            #                       = Σ s_i · w_i / Σ w_i  (the *10 cancels)
+            out = (samples * w).sum(axis=1) / total_w
+        else:
+            out = np.empty(n_samples, dtype=float)
+            for i in range(n_samples):
+                row = {k: float(samples[i, j]) for j, k in enumerate(common)}
+                out[i] = self.aggregate_to_category(row, weights)
         return (
             float(np.median(out)),
             float(np.percentile(out, 5)),
@@ -173,11 +188,11 @@ class QuamocoAggregator:
 
     def aggregate_intervals_to_overall(
         self,
-        category_intervals: Dict[str, "tuple[float, float]"],
+        category_intervals: Dict[str, tuple[float, float]],
         category_weights: Dict[str, float],
         n_samples: int = 10000,
         rng: Optional["np.random.Generator"] = None,
-    ) -> "tuple[float, float, float]":
+    ) -> tuple[float, float, float]:
         """Monte Carlo propagation at the category -> overall level."""
         if not category_intervals:
             return 0.0, 0.0, 0.0
@@ -193,9 +208,9 @@ class QuamocoAggregator:
         if total_w <= 0:
             raise ValueError("total weight must be positive")
 
-        samples = np.zeros((n_samples, len(common)), dtype=float)
-        for i, (lo, hi) in enumerate(intervals):
-            samples[:, i] = rng.uniform(lo, hi, size=n_samples)
+        samples = rng.uniform(
+            intervals[:, 0], intervals[:, 1], size=(n_samples, len(common))
+        )
         out = (samples * weights).sum(axis=1) / total_w
         return (
             float(np.median(out)),

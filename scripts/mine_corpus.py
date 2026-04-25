@@ -36,6 +36,7 @@ import argparse
 import json
 import os
 import random
+import re
 import sys
 import time
 import urllib.error
@@ -46,6 +47,22 @@ from typing import Any, Dict, List, Optional
 
 
 GITHUB_GRAPHQL = "https://api.github.com/graphql"
+
+# GitHub owner / repo names are ASCII alphanumerics + `-`, `_`, `.`. Reject
+# anything else so a hostile repo list cannot escape `--output` via path
+# traversal in the constructed filename.
+_GH_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$")
+
+
+def _validate_slug(slug: str) -> tuple[str, str]:
+    """Split `owner/repo` and validate both halves. Raises ValueError."""
+    if "/" not in slug:
+        raise ValueError(f"slug missing '/': {slug!r}")
+    owner, name = slug.split("/", 1)
+    for label, value in (("owner", owner), ("name", name)):
+        if not _GH_NAME_RE.match(value):
+            raise ValueError(f"invalid {label} {value!r} in slug {slug!r}")
+    return owner, name
 
 
 # ----- HTTP helpers (stdlib only — no external deps required) -----
@@ -181,7 +198,7 @@ _PLACEHOLDER_REPOS = [
 
 
 def synthesize_one(slug: str, rng: random.Random) -> Dict[str, Any]:
-    owner, name = slug.split("/")
+    owner, name = _validate_slug(slug)
     return {
         "owner": owner,
         "name": name,
@@ -214,7 +231,7 @@ def synthesize(out_dir: Path, n: int) -> int:
         pool += [f"acme-{i}/example-{i}" for i in range(n - len(pool))]
     written = 0
     for slug in pool[:n]:
-        owner, name = slug.split("/")
+        owner, name = _validate_slug(slug)
         path = out_dir / f"{owner}__{name}.json"
         if path.exists():
             continue
@@ -264,18 +281,25 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     repos = _read_repo_list(args.repos)
     print(f"mining {len(repos)} repos -> {args.output}")
+    output_root = args.output.resolve()
     written = failed = 0
     for slug in repos:
         try:
-            owner, name = slug.split("/", 1)
+            owner, name = _validate_slug(slug)
+        except ValueError as exc:
+            print(f"skip malformed: {slug} ({exc})", file=sys.stderr)
+            continue
+        out_path = (args.output / f"{owner}__{name}.json").resolve()
+        # Defense-in-depth: reject anything that escapes --output even after
+        # validation, in case the regex is loosened later.
+        try:
+            out_path.relative_to(output_root)
         except ValueError:
-            print(f"skip malformed: {slug}", file=sys.stderr)
+            print(f"skip {slug}: resolves outside --output ({out_path})", file=sys.stderr)
             continue
         try:
             data = mine_repo(owner, name, token, lookback_days=args.lookback_days)
-            (args.output / f"{owner}__{name}.json").write_text(
-                json.dumps(data, indent=2) + "\n"
-            )
+            out_path.write_text(json.dumps(data, indent=2) + "\n")
             written += 1
         except (urllib.error.HTTPError, urllib.error.URLError, RuntimeError) as exc:
             print(f"  ! {slug}: {exc}", file=sys.stderr)

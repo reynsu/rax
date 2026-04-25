@@ -451,7 +451,8 @@ def test_monte_carlo_propagation_to_category():
     median, p5, p95 = a.aggregate_intervals_to_category(intervals, weights, n_samples=20000)
     width = p95 - p5
     assert 0.0 < width <= 2.5  # not wider than max sub-char width (2.0) by much
-    assert 4.5 <= median <= 5.5
+    # True mean is 5.5; allow ±0.1 for Monte Carlo noise.
+    assert 5.4 <= median <= 5.6
     assert p5 < median < p95
 
 

@@ -186,37 +186,52 @@ def score_subcharacteristic(
     )
 
 
-_SCALE_MAPPING_CACHE: Optional[Dict[str, Any]] = None
+import functools
+import logging
+import os
+
+_SCALE_MAPPING_LOG = logging.getLogger("rax.scale_mapping")
 
 
+@functools.lru_cache(maxsize=1)
 def _load_scale_mapping() -> Dict[str, Any]:
     """Load `references/scale-mapping.yaml` once. If absent or unreadable,
-    return the linear `n * 2.5` default so callers always have a mapping."""
-    global _SCALE_MAPPING_CACHE
-    if _SCALE_MAPPING_CACHE is not None:
-        return _SCALE_MAPPING_CACHE
+    return the linear `n * 2.5` default so callers always have a mapping.
 
+    Cached via `lru_cache(maxsize=1)`. Tests that mutate `scale-mapping.yaml`
+    on disk should call `_load_scale_mapping.cache_clear()` between cases.
+    """
     from pathlib import Path
     path = Path(__file__).resolve().parent.parent / "references" / "scale-mapping.yaml"
-    fallback = {
+    fallback: Dict[str, Any] = {
         "default": {"1": 2.5, "2": 5.0, "3": 7.5, "4": 10.0},
         "overrides": {},
     }
     if not path.exists():
-        _SCALE_MAPPING_CACHE = fallback
-        return _SCALE_MAPPING_CACHE
+        return fallback
+
     try:
         import yaml  # type: ignore[import-untyped]
+    except ImportError:
+        _SCALE_MAPPING_LOG.warning("PyYAML not installed; scale-mapping using linear default.")
+        return fallback
+
+    try:
         loaded = yaml.safe_load(path.read_text()) or {}
-        if not isinstance(loaded, dict):
-            _SCALE_MAPPING_CACHE = fallback
-        else:
-            loaded.setdefault("default", fallback["default"])
-            loaded.setdefault("overrides", {})
-            _SCALE_MAPPING_CACHE = loaded
-    except Exception:
-        _SCALE_MAPPING_CACHE = fallback
-    return _SCALE_MAPPING_CACHE
+    except (yaml.YAMLError, OSError) as exc:
+        _SCALE_MAPPING_LOG.warning(
+            "Could not load %s (%s); falling back to linear default.", path, exc
+        )
+        return fallback
+
+    if not isinstance(loaded, dict):
+        _SCALE_MAPPING_LOG.warning(
+            "%s did not contain a top-level mapping; falling back.", path
+        )
+        return fallback
+    loaded.setdefault("default", fallback["default"])
+    loaded.setdefault("overrides", {})
+    return loaded
 
 
 def _scale_to_ten(raw: float, sub_id: Optional[str] = None) -> float:

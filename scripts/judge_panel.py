@@ -22,21 +22,28 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import asyncio
 import hashlib
 import json
 import os
+import re
 import statistics
 import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
+
+from scripts.cross_llm_eval import JUDGE_FUNCS
+from scripts.secret_scrub import scrub as _scrub_secrets
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CACHE_DIR = REPO_ROOT / ".cache" / "judge_panel"
 SCHEMA_PATH = REPO_ROOT / "references" / "audit-output.schema.json"
 CACHE_TTL_SEC = 7 * 24 * 3600   # 7 days
+
+# Allowlist for path components used as cache directory names. Refuses any
+# value containing path separators, nulls, or characters outside the safe set.
+_SAFE_PATH_COMPONENT = re.compile(r"^[A-Za-z0-9._-]{1,128}$")
 
 
 # ----- prompt utilities -----
@@ -75,13 +82,23 @@ def _load_prompt(args: argparse.Namespace) -> str:
 # ----- caching -----
 
 
+def _safe_segment(value: str) -> str:
+    """Refuse path-traversal-shaped components for cache filenames."""
+    if not _SAFE_PATH_COMPONENT.match(value):
+        raise ValueError(f"unsafe cache path segment: {value!r}")
+    return value
+
+
 def _cache_key(model: str, prompt: str) -> Path:
     h = hashlib.sha256(prompt.encode("utf-8")).hexdigest()[:16]
-    return CACHE_DIR / model / f"{h}.json"
+    return CACHE_DIR / _safe_segment(model) / f"{h}.json"
 
 
 def _cache_get(model: str, prompt: str) -> Optional[Dict[str, Any]]:
-    p = _cache_key(model, prompt)
+    try:
+        p = _cache_key(model, prompt)
+    except ValueError:
+        return None
     if not p.exists():
         return None
     if time.time() - p.stat().st_mtime > CACHE_TTL_SEC:
@@ -93,15 +110,23 @@ def _cache_get(model: str, prompt: str) -> Optional[Dict[str, Any]]:
 
 
 def _cache_put(model: str, prompt: str, data: Dict[str, Any]) -> None:
-    p = _cache_key(model, prompt)
+    try:
+        p = _cache_key(model, prompt)
+    except ValueError:
+        return  # don't write to a path we can't validate
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(data, indent=2))
+    # 0o600 so cached LLM outputs don't get read by other local users.
+    fd = os.open(str(p), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception:
+        if os.path.exists(p):
+            os.remove(p)
+        raise
 
 
 # ----- judges (delegated to cross_llm_eval; keeps sync wrappers reusable) -----
-
-
-from scripts.cross_llm_eval import _judge_claude, _judge_gemini, _judge_openai
 
 
 JUDGE_LABELS: Dict[str, str] = {
@@ -115,14 +140,10 @@ def _run_judge_once(name: str, prompt: str) -> Dict[str, Any]:
     cached = _cache_get(name, prompt)
     if cached is not None:
         return {"source": "cache", "scores": cached}
-    if name == "claude":
-        scores = _judge_claude(prompt)
-    elif name == "gpt4":
-        scores = _judge_openai(prompt)
-    elif name == "gemini":
-        scores = _judge_gemini(prompt)
-    else:
+    judge = JUDGE_FUNCS.get(name)
+    if judge is None:
         raise ValueError(f"unknown judge: {name}")
+    scores = judge(prompt)
     _cache_put(name, prompt, scores)
     return {"source": "live", "scores": scores}
 
@@ -134,8 +155,10 @@ def _run_judge_replicates(name: str, prompt: str, n: int) -> Dict[str, Any]:
         try:
             res = _run_judge_once(name, prompt)
             runs.append(res["scores"])
-        except Exception as exc:  # noqa: BLE001
-            error = str(exc)
+        except Exception as exc:  # noqa: BLE001 — keep panel running on any judge failure
+            # Scrub before storing — exception text from SDK clients can embed
+            # API key fragments (e.g., "Invalid key sk-ant-***...").
+            error = _scrub_secrets(str(exc))
             break
     return {"runs": runs, "error": error}
 

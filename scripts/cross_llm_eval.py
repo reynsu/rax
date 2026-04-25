@@ -146,6 +146,10 @@ JUDGES: Dict[str, Callable[[str], Dict[str, float]]] = {
     "gemini": _judge_gemini,
 }
 
+# Public alias so other modules don't reach for the underscore-prefixed
+# private callables.
+JUDGE_FUNCS: Dict[str, Callable[[str], Dict[str, float]]] = JUDGES
+
 
 # ---------- aggregation ----------
 
@@ -192,7 +196,10 @@ def evaluate(
         try:
             per_judge[name] = JUDGES[name](prompt)
         except Exception as exc:  # noqa: BLE001 — always continue on judge failure
-            unavailable[name] = str(exc)
+            # Scrub before storing — SDK exception messages occasionally embed
+            # the offending API key prefix.
+            from scripts.secret_scrub import scrub
+            unavailable[name] = scrub(str(exc))
 
     scores = aggregate_scores(per_judge)
     return {

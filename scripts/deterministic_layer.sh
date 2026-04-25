@@ -69,6 +69,30 @@ with_timeout() {
     fi
 }
 
+# Project-local binaries from $TARGET/node_modules/.bin are *not* trusted by
+# default — anyone with write access to the audited tree can substitute them
+# with hostile binaries that execute as the auditor's user. Opt in with
+# RAX_TRUST_PROJECT_BINS=1 when you trust the target tree.
+TRUST_PROJECT_BINS="${RAX_TRUST_PROJECT_BINS:-0}"
+
+# Resolve a tool: PATH first, then optionally $TARGET/node_modules/.bin/<name>
+# when project bins are explicitly trusted. Echoes the resolved path or empty.
+resolve_tool() {
+    local name="$1"
+    local on_path
+    on_path="$(command -v "$name" 2>/dev/null || true)"
+    if [[ -n "$on_path" ]]; then
+        printf '%s\n' "$on_path"
+        return 0
+    fi
+    if [[ "$TRUST_PROJECT_BINS" == "1" ]] && [[ -x "$TARGET/node_modules/.bin/$name" ]]; then
+        printf '%s\n' "$TARGET/node_modules/.bin/$name"
+        return 0
+    fi
+    printf ''
+    return 1
+}
+
 # ----- tool runners -----
 
 run_semgrep() {
@@ -88,12 +112,12 @@ run_semgrep() {
 }
 
 run_eslint() {
-    if ! command -v eslint >/dev/null 2>&1 && ! [[ -x "$TARGET/node_modules/.bin/eslint" ]]; then
+    local bin
+    bin="$(resolve_tool eslint)"
+    if [[ -z "$bin" ]]; then
         mark_failed eslint not_installed
         return 0
     fi
-    local bin="eslint"
-    [[ -x "$TARGET/node_modules/.bin/eslint" ]] && bin="$TARGET/node_modules/.bin/eslint"
     if with_timeout "$bin" "$TARGET" --ext .ts,.tsx,.js,.jsx --format=json \
             -o "$ESLINT_OUT" >/dev/null 2>&1 \
         || [[ -s "$ESLINT_OUT" ]]; then
@@ -104,9 +128,8 @@ run_eslint() {
 }
 
 run_tsc() {
-    local bin=""
-    if command -v tsc >/dev/null 2>&1; then bin="tsc"; fi
-    [[ -x "$TARGET/node_modules/.bin/tsc" ]] && bin="$TARGET/node_modules/.bin/tsc"
+    local bin
+    bin="$(resolve_tool tsc)"
     if [[ -z "$bin" ]]; then
         mark_failed tsc not_installed
         return 0
@@ -120,9 +143,8 @@ run_tsc() {
 }
 
 run_madge() {
-    local bin=""
-    if command -v madge >/dev/null 2>&1; then bin="madge"; fi
-    [[ -x "$TARGET/node_modules/.bin/madge" ]] && bin="$TARGET/node_modules/.bin/madge"
+    local bin
+    bin="$(resolve_tool madge)"
     if [[ -z "$bin" ]]; then
         mark_failed madge not_installed
         return 0
@@ -138,9 +160,8 @@ run_madge() {
 }
 
 run_jscpd() {
-    local bin=""
-    if command -v jscpd >/dev/null 2>&1; then bin="jscpd"; fi
-    [[ -x "$TARGET/node_modules/.bin/jscpd" ]] && bin="$TARGET/node_modules/.bin/jscpd"
+    local bin
+    bin="$(resolve_tool jscpd)"
     if [[ -z "$bin" ]]; then
         mark_failed jscpd not_installed
         return 0
@@ -213,17 +234,19 @@ echo
 echo "==== rax/deterministic summary ===="
 echo "tools_run:    $TOOLS_RUN"
 echo "tools_failed: $TOOLS_FAILED"
-"$PYTHON" -c "
+# Pass the JSON path via argv so a hostile $RAX_OUT_DIR cannot inject Python.
+"$PYTHON" - "$DETERMINISTIC_OUT" <<'PYSUMMARY'
 import json, sys
-d = json.load(open('$DETERMINISTIC_OUT'))
-subs = d['by_iso_subcharacteristic']
-total_findings = sum(len(v['findings']) for v in subs.values())
-print(f'sub-characteristics indexed: {len(subs)}')
-print(f'total findings:              {total_findings}')
-ranked = sorted(subs.items(), key=lambda kv: kv[1]['deterministic_score'])
-print('lowest scoring (top 5):')
+with open(sys.argv[1]) as f:
+    d = json.load(f)
+subs = d["by_iso_subcharacteristic"]
+total_findings = sum(len(v["findings"]) for v in subs.values())
+print(f"sub-characteristics indexed: {len(subs)}")
+print(f"total findings:              {total_findings}")
+ranked = sorted(subs.items(), key=lambda kv: kv[1]["deterministic_score"])
+print("lowest scoring (top 5):")
 for k, v in ranked[:5]:
-    print(f'  {k}: {v[\"deterministic_score\"]:.2f}  ({len(v[\"findings\"])} findings, conf={v[\"confidence\"]})')
-"
+    print(f"  {k}: {v['deterministic_score']:.2f}  ({len(v['findings'])} findings, conf={v['confidence']})")
+PYSUMMARY
 echo "==================================="
 echo "output: $DETERMINISTIC_OUT"

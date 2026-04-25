@@ -173,8 +173,17 @@ def score_from_findings(findings: List[Dict[str, Any]]) -> float:
 
 # ---------- per-tool parsers ----------
 
+_MAX_TOOL_OUTPUT_BYTES = 50 * 1024 * 1024  # 50 MB — semgrep on big monorepos can blow past this
+
+
 def _read_json(path: Optional[str]) -> Optional[Any]:
     if not path or not os.path.exists(path) or os.path.getsize(path) == 0:
+        return None
+    if os.path.getsize(path) > _MAX_TOOL_OUTPUT_BYTES:
+        sys.stderr.write(
+            f"rax/parse_deterministic: {path} exceeds {_MAX_TOOL_OUTPUT_BYTES} bytes; "
+            "skipping to avoid OOM. Re-run the upstream tool with tighter scope.\n"
+        )
         return None
     try:
         with open(path) as f:
