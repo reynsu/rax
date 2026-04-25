@@ -1,5 +1,8 @@
-# rax state — per-checkout, never commit
-.claude/rax/
+# Claude Code state, settings, and review/session artifacts.
+# Per-checkout, never commit. This covers .claude/rax/ (audit state),
+# .claude/PRPs/ (review reports), .claude/settings.local.json, and any
+# other Claude Code-managed files that land here.
+.claude/
 
 # Python
 __pycache__/
