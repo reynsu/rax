@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_INTER_SD",
+  "expected_score_1_to_10": 2,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 7,
+  "justification": "No loading / empty / error states. The UI is silent while fetching and on failure. Self-descriptiveness collapses."
+}

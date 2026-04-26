@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_SEC_AUTH",
+  "expected_score_1_to_10": 1,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 9,
+  "justification": "Authorization decided in the UI. Anyone can call the underlying API directly. The guard is decorative."
+}

@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_SEC_CONF",
+  "expected_score_1_to_10": 9,
+  "tier": "extreme_high",
+  "framework": "react-native",
+  "size_loc": 14,
+  "justification": "OS keychain + biometry + passcode-set-this-device-only is the highest-tier mobile auth-token storage available. Cannot be extracted without device unlock + biometric."
+}

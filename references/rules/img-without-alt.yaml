@@ -1,0 +1,18 @@
+rules:
+  - id: rax.a11y.img-without-alt
+    patterns:
+      - pattern-either:
+          - pattern: <img src=$SRC ... />
+      - pattern-not: <img src=$SRC alt=$A ... />
+      - pattern-not: <img src=$SRC role="presentation" ... />
+      - pattern-not: <img src=$SRC aria-hidden={true} ... />
+    message: |
+      <img> without alt is invisible to screen readers. Use a descriptive alt
+      for meaningful images, alt="" for decorative ones, or aria-hidden when
+      the image duplicates adjacent text.
+    languages: [typescript]
+    severity: ERROR
+    metadata:
+      iso_sub_id: ISO_INTER_INC
+      rax_v1_id: UXA-1
+      cwe: ""

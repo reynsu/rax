@@ -1,0 +1,80 @@
+# Profile: fintech
+# Apps financieras: trading, banking, payments, lending. Security y
+# Reliability dominan; defectos en authn/integrity/availability tienen
+# costo regulatorio (PCI-DSS, SOC2, fines por outage) y reputacional
+# alto. UX importa pero no domina las decisiones.
+
+description: |
+  Apps financieras / fintech. Security al 30% y Reliability al 18% —
+  ambos por encima del default de consumer. Sub-características de
+  Security ampliamente promovidas a "critical" (sigmoid penalty),
+  incluyendo Integrity y Resistance que en consumer son lineales.
+  Red flags más estrictos: secret leaks o HTTP-en-producción capean
+  más bajo (3 vs 4 del default).
+
+weights:
+  functional_suitability: 0.04     # E2E sobre flujos de dinero, si existe
+  performance_efficiency: 0.10
+  compatibility: 0.05              # interop con bancos/processors/regulatory APIs
+  interaction_capability: 0.10     # UX importa pero no domina
+  reliability: 0.18                # outages = $$ + regulatory exposure
+  security: 0.30                   # >2x el peso de consumer
+  maintainability: 0.18
+  flexibility: 0.02                # bajo: cambios mayores en fintech son raros y planificados
+  safety: 0.03
+
+# Promovemos a "critical" (sigmoid penalty) sub-características adicionales
+# de Security y Reliability. Esto significa que un score bajo en Integrity
+# o Fault Tolerance arrastra el overall mucho más fuerte que en default.
+utility_overrides:
+  ISO_SEC_INT: sigmoid       # Integrity: writes a balance must be unforgeable
+  ISO_SEC_RES: sigmoid       # Resistance: supply chain + DDoS + abuse
+  ISO_SEC_ACC: sigmoid       # Accountability: audit trail completo es regulatorio
+  ISO_REL_FT: sigmoid        # Fault Tolerance: graceful degradation obligatorio
+  ISO_REL_REC: sigmoid       # Recoverability: state recovery post-failure
+
+red_flag_rules:
+  - id: hardcoded_secret
+    description: "API key, token, or credential hardcoded in source"
+    cap_category: security
+    cap_at: 3                # más estricto que consumer (4)
+  - id: auth_token_plain_storage
+    description: "Auth token in plain localStorage/AsyncStorage"
+    cap_category: security
+    cap_at: 3
+  - id: http_endpoint_prod
+    description: "Non-TLS HTTP endpoint in production code"
+    cap_category: security
+    cap_at: 3
+  - id: missing_certificate_pinning_mobile
+    description: "RN/mobile financial app without TLS certificate pinning"
+    cap_category: security
+    cap_at: 4                # nuevo en fintech
+  - id: rules_of_hooks_violation
+    description: "Conditional hook / hook in loop"
+    cap_category: reliability
+    cap_at: 4
+  - id: dangerously_set_inner_html_user_content
+    description: "dangerouslySetInnerHTML with user-derived content"
+    cap_category: security
+    cap_at: 3
+  - id: missing_error_boundary_with_network
+    description: "App with network calls and no error boundary"
+    cap_category: reliability
+    cap_at: 4
+  - id: missing_idempotency_on_payment_mutation
+    description: "Payment/transfer mutation without idempotency key"
+    cap_category: reliability
+    cap_at: 4                # nuevo en fintech
+  - id: pii_in_logs
+    description: "PII (email, SSN, card, account) logged to console/analytics"
+    cap_category: security
+    cap_at: 4                # nuevo en fintech
+  - id: empty_catch_on_money_flow
+    description: "Empty .catch(() => {}) on a payment / transfer / balance call"
+    cap_category: reliability
+    cap_at: 3
+  - id: missing_runtime_validation_external_data
+    description: "External data (API, deep link) consumed without runtime validation"
+    cap_category: security
+    cap_at: 4                # nuevo en fintech

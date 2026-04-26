@@ -1,0 +1,21 @@
+{
+  "owner": "cypress-io",
+  "name": "cypress",
+  "name_with_owner": "cypress-io/cypress",
+  "created_at": "2020-01-01T00:00:00Z",
+  "pushed_at": "2026-04-01T00:00:00Z",
+  "is_archived": false,
+  "is_fork": false,
+  "lifespan_years": 6.12,
+  "star_count": 69701,
+  "fork_count": 16611,
+  "defect_density_per_file": 0.2454,
+  "recent_activity_commits": 11,
+  "review_intensity": {
+    "avg_comments_per_pr": 1.19,
+    "avg_reviews_per_pr": 1.98
+  },
+  "cve_count": 2,
+  "synthetic": true,
+  "mined_at": "2026-04-25T00:00:00Z"
+}

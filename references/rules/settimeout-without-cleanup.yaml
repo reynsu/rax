@@ -1,0 +1,31 @@
+rules:
+  - id: rax.rel.settimeout-without-cleanup
+    patterns:
+      - pattern-inside: |
+          useEffect(() => {
+            ...
+          }, ...)
+      - pattern: setTimeout(...)
+      - pattern-not-inside: |
+          useEffect(() => {
+            ...
+            clearTimeout(...)
+            ...
+          }, ...)
+      - pattern-not-inside: |
+          useEffect(() => {
+            ...
+            return () => {
+              ...
+            }
+          }, ...)
+    message: |
+      setTimeout inside useEffect needs clearTimeout in the cleanup so a fast
+      unmount or re-render does not leave dangling state updates that fire
+      after the component is gone.
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      iso_sub_id: ISO_REL_FAULT
+      rax_v1_id: PRF-6
+      cwe: "CWE-401"

@@ -1,0 +1,69 @@
+# Profile: accessibility-critical
+# Apps donde Interaction Capability (especialmente Inclusivity, Operability,
+# User Error Protection) es regulatorio o existencial: gov/civic services
+# (ADA/Section 508, EN 301 549), healthcare patient-facing, educación K-12
+# (WCAG 2.2 AA exigido), seguro/banking customer-facing en jurisdicciones
+# con accesibilidad regulada.
+
+description: |
+  Apps con accesibilidad regulada o existencial — gov/civic, healthcare
+  patient-facing, educación, customer-facing en jurisdicciones con WCAG
+  obligatorio. Interaction Capability al 30% (vs 18% del consumer).
+  Inclusivity, Operability y User Error Protection promovidos a critical.
+  Red flags de a11y capean a ≤3 (más estricto que el ≤4 del consumer).
+
+weights:
+  functional_suitability: 0.07     # E2E con screen reader sería evidencia
+  performance_efficiency: 0.10
+  compatibility: 0.05               # AT (assistive tech) compatibility importa
+  interaction_capability: 0.30      # >2x consumer (18%) — domina la decisión
+  reliability: 0.12
+  security: 0.13                    # importante (datos médicos / gov), pero no domina
+  maintainability: 0.18
+  flexibility: 0.03
+  safety: 0.02
+
+utility_overrides:
+  # Las sub-chars de a11y suben a critical: cualquier hueco grande
+  # arrastra fuerte el overall.
+  ISO_INTER_INC: sigmoid           # Inclusivity (a11y roles, contraste, i18n)
+  ISO_INTER_OP: sigmoid            # Operability (keyboard / focus / touch targets)
+  ISO_INTER_UEP: sigmoid           # User Error Protection (validación / undo)
+
+red_flag_rules:
+  - id: touchable_without_a11y_name_primary_flow
+    description: "Interactive element without accessible name on a primary flow"
+    cap_category: interaction_capability
+    cap_at: 3                       # más estricto que consumer (4)
+  - id: primary_flow_contrast_below_3
+    description: "Primary-flow text/UI contrast below 3:1"
+    cap_category: interaction_capability
+    cap_at: 3
+  - id: focus_outline_removed_globally
+    description: "Focus outline removed via CSS/RN globally"
+    cap_category: interaction_capability
+    cap_at: 3
+  - id: form_field_without_label
+    description: "Form input without an associated label or accessibilityLabel"
+    cap_category: interaction_capability
+    cap_at: 3
+  - id: keyboard_trap
+    description: "Keyboard trap: focus cannot leave a region with keyboard alone"
+    cap_category: interaction_capability
+    cap_at: 2                       # showstopper para WCAG 2.1.2
+  - id: image_without_alt_meaningful
+    description: "Image conveying meaning without alt/accessibilityLabel"
+    cap_category: interaction_capability
+    cap_at: 3
+  - id: hardcoded_strings_no_i18n
+    description: "Strings hardcoded in components (no i18n layer) for an app meant to localize"
+    cap_category: interaction_capability
+    cap_at: 4
+  - id: hardcoded_secret
+    description: "API key, token, or credential hardcoded in source"
+    cap_category: security
+    cap_at: 4
+  - id: rules_of_hooks_violation
+    description: "Conditional hook / hook in loop"
+    cap_category: reliability
+    cap_at: 4

@@ -1,0 +1,24 @@
+rules:
+  - id: rax.sec.asyncstorage-token
+    pattern-either:
+      - patterns:
+          - pattern: AsyncStorage.setItem($KEY, ...)
+          - metavariable-regex:
+              metavariable: $KEY
+              regex: ".*(?i)(token|secret|password|jwt|access|refresh|session|api[-_]?key|credential).*"
+      - patterns:
+          - pattern: localStorage.setItem($KEY, ...)
+          - metavariable-regex:
+              metavariable: $KEY
+              regex: ".*(?i)(token|secret|password|jwt|access|refresh|session|api[-_]?key|credential).*"
+    message: |
+      Auth tokens / credentials stored in plain AsyncStorage / localStorage
+      are extractable by any malware on the device or any XSS on the page.
+      On RN use react-native-keychain or expo-secure-store. On web prefer
+      httpOnly cookies, fall back to memory + refresh.
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      iso_sub_id: ISO_SEC_CONF
+      rax_v1_id: SEC-3
+      cwe: "CWE-312"

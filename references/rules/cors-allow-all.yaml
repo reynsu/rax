@@ -1,0 +1,18 @@
+rules:
+  - id: rax.sec.cors-allow-all
+    pattern-either:
+      - pattern: |
+          $RES.headers["Access-Control-Allow-Origin"] = "*"
+      - pattern: |
+          $RES.setHeader("Access-Control-Allow-Origin", "*")
+    message: |
+      Access-Control-Allow-Origin: * combined with credentialed requests is
+      a data-leak vector. List the trusted origins explicitly, or use a
+      function-based whitelist that returns the requesting origin only when
+      it matches.
+    languages: [typescript, javascript]
+    severity: WARNING
+    metadata:
+      iso_sub_id: ISO_SEC_RES
+      rax_v1_id: SEC-5
+      cwe: "CWE-942"

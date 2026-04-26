@@ -1,0 +1,21 @@
+{
+  "owner": "software-mansion",
+  "name": "react-native-reanimated",
+  "name_with_owner": "software-mansion/react-native-reanimated",
+  "created_at": "2020-01-01T00:00:00Z",
+  "pushed_at": "2026-04-01T00:00:00Z",
+  "is_archived": false,
+  "is_fork": false,
+  "lifespan_years": 4.77,
+  "star_count": 71265,
+  "fork_count": 21021,
+  "defect_density_per_file": 0.3253,
+  "recent_activity_commits": 33,
+  "review_intensity": {
+    "avg_comments_per_pr": 5.63,
+    "avg_reviews_per_pr": 3.45
+  },
+  "cve_count": 0,
+  "synthetic": true,
+  "mined_at": "2026-04-25T00:00:00Z"
+}

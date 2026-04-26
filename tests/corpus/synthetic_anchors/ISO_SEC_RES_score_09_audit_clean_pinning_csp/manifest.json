@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_SEC_RES",
+  "expected_score_1_to_10": 9,
+  "tier": "extreme_high",
+  "framework": "react-native",
+  "size_loc": 11,
+  "justification": "TLS + cert pinning with backup pin. Combined with npm audit clean in CI (out of band) \u2014 close to the achievable ceiling for resistance."
+}

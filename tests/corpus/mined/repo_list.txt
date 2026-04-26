@@ -1,0 +1,65 @@
+# Sample input list for `python scripts/mine_corpus.py --repos this-file --output ./`
+# One owner/repo per line; lines starting with # are ignored.
+# To run real mining (requires GITHUB_TOKEN env var):
+#     GITHUB_TOKEN=$(gh auth token) python scripts/mine_corpus.py \
+#         --repos tests/corpus/mined/repo_list.txt \
+#         --output tests/corpus/mined/
+#
+# This file is committed; run results are gitignored except for the synthetic
+# placeholders that ship with the repo (clearly marked "synthetic": true).
+
+facebook/react-native
+expo/expo
+microsoft/react-native-windows
+react-native-elements/react-native-elements
+GeekyAnts/NativeBase
+infinitered/ignite
+wix/Detox
+react-native-async-storage/async-storage
+callstack/react-native-paper
+software-mansion/react-native-reanimated
+react-navigation/react-navigation
+facebook/react
+vercel/next.js
+vercel/swr
+TanStack/query
+TanStack/router
+remix-run/remix
+pmndrs/zustand
+reduxjs/redux-toolkit
+facebook/lexical
+tldraw/tldraw
+primer/react
+shadcn-ui/ui
+radix-ui/primitives
+chakra-ui/chakra-ui
+mui/material-ui
+mantinedev/mantine
+vitejs/vite
+storybookjs/storybook
+playwright/playwright
+DefinitelyTyped/DefinitelyTyped
+microsoft/TypeScript
+preactjs/preact
+gatsbyjs/gatsby
+withastro/astro
+expo/eas-cli
+react-hook-form/react-hook-form
+formkit/formkit
+TanStack/form
+emotion-js/emotion
+styled-components/styled-components
+linaria-css/linaria
+themeable/styled-system
+unocss/unocss
+tailwindlabs/tailwindcss
+formatjs/formatjs
+i18next/react-i18next
+rt2zz/redux-persist
+tanstack/virtual
+bvaughn/react-virtualized
+jsdom/jsdom
+testing-library/react-testing-library
+testing-library/native-testing-library
+mswjs/msw
+faker-js/faker

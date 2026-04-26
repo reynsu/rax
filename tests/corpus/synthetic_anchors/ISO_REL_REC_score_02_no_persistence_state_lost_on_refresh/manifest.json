@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_REL_REC",
+  "expected_score_1_to_10": 2,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 7,
+  "justification": "Multi-step form holds all state in memory. A page refresh loses the user's progress. Bad mental model on flaky connections."
+}

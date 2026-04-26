@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_REL_FT",
+  "expected_score_1_to_10": 9,
+  "tier": "extreme_high",
+  "framework": "react",
+  "size_loc": 20,
+  "justification": "Boundary at component level, fallback offers recovery, error reported to monitoring with React component stack. Compose at app/route/risky-tree."
+}

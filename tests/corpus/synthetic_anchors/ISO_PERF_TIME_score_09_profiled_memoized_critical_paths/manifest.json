@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_PERF_TIME",
+  "expected_score_1_to_10": 9,
+  "tier": "extreme_high",
+  "framework": "react",
+  "size_loc": 11,
+  "justification": "Stable callbacks via useCallback, memoized derived data, memo'd item component, stable keys. Profiler verifies zero wasted renders."
+}

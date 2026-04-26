@@ -1,0 +1,23 @@
+rules:
+  - id: rax.sec.math-random-for-token
+    patterns:
+      - pattern-either:
+          - pattern: |
+              const $X = Math.random();
+          - pattern: |
+              let $X = Math.random();
+          - pattern: |
+              var $X = Math.random();
+      - metavariable-regex:
+          metavariable: $X
+          regex: ".*(?i)(token|secret|key|nonce|salt|csrf|session|otp|password|reset|recover).*"
+    message: |
+      Math.random() is not cryptographically secure. Use crypto.getRandomValues
+      (web), expo-crypto / react-native-get-random-values (mobile), or
+      crypto.randomUUID for tokens, nonces, salts, and similar.
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      iso_sub_id: ISO_SEC_RES
+      rax_v1_id: SEC-5
+      cwe: "CWE-338"

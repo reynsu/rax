@@ -1,0 +1,6 @@
+{
+  "runs": {},
+  "synthetic": true,
+  "generated_at": "2026-04-25",
+  "note": "Placeholder file. Live LLM benchmark results land here when `pytest tests/test_self_consistency.py -m expensive` is run with ANTHROPIC_API_KEY set. Until then, downstream consumers (Phase 5 calibration drift monitor) read this and treat all sub-characteristics as 'unknown stability' (treated as confidence_class=low for safety)."
+}

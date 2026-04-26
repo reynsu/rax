@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_INTER_OP",
+  "expected_score_1_to_10": 9,
+  "tier": "extreme_high",
+  "framework": "react",
+  "size_loc": 17,
+  "justification": "Radix primitives \u2014 focus trap, restore on close, ESC + click-outside, labelled, predictable keyboard. Operability ceiling for modals."
+}

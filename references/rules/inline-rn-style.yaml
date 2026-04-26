@@ -1,0 +1,18 @@
+rules:
+  - id: rax.perf.inline-rn-style
+    patterns:
+      - pattern-either:
+          - pattern: <View style={{ ... }} ...>...</View>
+          - pattern: <Text style={{ ... }} ...>...</Text>
+          - pattern: <Pressable style={{ ... }} ...>...</Pressable>
+          - pattern: <TouchableOpacity style={{ ... }} ...>...</TouchableOpacity>
+    message: |
+      Inline styles in React Native allocate a new object every render and
+      defeat StyleSheet.create's optimization (which IDs styles for the
+      bridge). Move the style to StyleSheet.create at module scope.
+    languages: [typescript]
+    severity: WARNING
+    metadata:
+      iso_sub_id: ISO_PERF_TIME
+      rax_v1_id: RXP-7
+      cwe: ""

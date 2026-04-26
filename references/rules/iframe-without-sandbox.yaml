@@ -1,0 +1,16 @@
+rules:
+  - id: rax.sec.iframe-without-sandbox
+    patterns:
+      - pattern: <iframe src=$S ... />
+      - pattern-not: <iframe src=$S sandbox=$X ... />
+      - pattern-not: <iframe src=$S sandbox ... />
+    message: |
+      <iframe> without a sandbox attribute can run scripts, navigate the
+      top window, submit forms, and grant pointer-lock — all by default.
+      Restrict with sandbox="" plus the explicit allowances you need.
+    languages: [typescript]
+    severity: WARNING
+    metadata:
+      iso_sub_id: ISO_SEC_INT
+      rax_v1_id: SEC-2
+      cwe: "CWE-1021"

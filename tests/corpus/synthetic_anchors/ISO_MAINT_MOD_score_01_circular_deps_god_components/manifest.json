@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_MAINT_MOD",
+  "expected_score_1_to_10": 1,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 7,
+  "justification": "Circular dependency + god component. Hand-waved here as comments \u2014 the structural problem is what the score reflects."
+}

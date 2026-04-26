@@ -1,0 +1,21 @@
+{
+  "owner": "mantinedev",
+  "name": "mantine",
+  "name_with_owner": "mantinedev/mantine",
+  "created_at": "2020-01-01T00:00:00Z",
+  "pushed_at": "2026-04-01T00:00:00Z",
+  "is_archived": false,
+  "is_fork": false,
+  "lifespan_years": 4.13,
+  "star_count": 108267,
+  "fork_count": 15353,
+  "defect_density_per_file": 0.3955,
+  "recent_activity_commits": 11,
+  "review_intensity": {
+    "avg_comments_per_pr": 5.55,
+    "avg_reviews_per_pr": 3.94
+  },
+  "cve_count": 0,
+  "synthetic": true,
+  "mined_at": "2026-04-25T00:00:00Z"
+}

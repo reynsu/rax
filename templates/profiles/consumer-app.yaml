@@ -1,0 +1,70 @@
+# Profile: consumer-app
+# Apps de consumo móvil/web (e-commerce, social, productividad, contenidos).
+# Pesos balanceados: Maintainability domina (driver de costo a 2+ años),
+# Interaction Capability segundo (la UX define adopción), Security y
+# Performance pesan medio. Functional Suitability con peso simbólico —
+# requiere E2E coverage para ser auditada en serio.
+
+description: |
+  Pesos balanceados para apps de consumo móvil/web. Maintainability lidera
+  porque es el principal driver de costo total a largo plazo; Interaction
+  Capability (UX/a11y) es segundo porque la adopción depende de ella;
+  Security y Performance reciben peso medio-alto.
+
+weights:
+  functional_suitability: 0.05   # bajo — no auditable estática sin E2E significativa
+  performance_efficiency: 0.15   # latencia percibida es top driver de abandono
+  compatibility: 0.04            # bajo en consumer single-stack
+  interaction_capability: 0.18   # UX/a11y como diferenciador
+  reliability: 0.12              # crashes son top causa de uninstalls
+  security: 0.15                 # PII, auth, payments — relevante pero no dominante
+  maintainability: 0.22          # absorbe ARC/CQR/RXP/TST/TYP de v1 (era ~50% combinado)
+  flexibility: 0.06              # adaptabilidad / scalability moderada
+  safety: 0.03                   # mínimo — solo Fail Safe vía error boundaries
+
+# Defaults de Quamoco aplican: ISO_SEC_CONF, ISO_SEC_AUTH, ISO_REL_FAULT,
+# ISO_SAFE_FS usan sigmoid penalty. El resto, linear.
+utility_overrides: {}
+
+# Red flags — capean la categoría afectada. Heredados del rubric v1.
+red_flag_rules:
+  - id: hardcoded_secret
+    description: "API key, token, or credential hardcoded in source"
+    cap_category: security
+    cap_at: 4
+  - id: auth_token_plain_storage
+    description: "Auth token in plain localStorage/AsyncStorage"
+    cap_category: security
+    cap_at: 4
+  - id: http_endpoint_prod
+    description: "Non-TLS HTTP endpoint in production code"
+    cap_category: security
+    cap_at: 4
+  - id: rules_of_hooks_violation
+    description: "Conditional hook / hook in loop (react-hooks/rules-of-hooks)"
+    cap_category: reliability
+    cap_at: 4
+  - id: dangerously_set_inner_html_user_content
+    description: "dangerouslySetInnerHTML with user-derived content"
+    cap_category: security
+    cap_at: 4
+  - id: missing_error_boundary_with_network
+    description: "App with network calls and no error boundary"
+    cap_category: reliability
+    cap_at: 4
+  - id: unbounded_list_in_scrollview_rn
+    description: "RN: unbounded list in ScrollView (instead of FlatList)"
+    cap_category: performance_efficiency
+    cap_at: 4
+  - id: empty_catch_user_facing
+    description: "Empty .catch(() => {}) on a user-facing call"
+    cap_category: reliability
+    cap_at: 4
+  - id: touchable_without_a11y_name_primary_flow
+    description: "Touchable without accessibility label on primary flow"
+    cap_category: interaction_capability
+    cap_at: 4
+  - id: primary_flow_contrast_below_3
+    description: "Primary-flow text contrast <3:1"
+    cap_category: interaction_capability
+    cap_at: 4

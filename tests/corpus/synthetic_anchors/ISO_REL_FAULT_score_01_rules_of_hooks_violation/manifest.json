@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_REL_FAULT",
+  "expected_score_1_to_10": 1,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 10,
+  "justification": "Conditional hook breaks the render-order invariant. React will misalign hook indices across renders \u2192 crashes or wrong state."
+}

@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_FLEX_REPL",
+  "expected_score_1_to_10": 9,
+  "tier": "extreme_high",
+  "framework": "react",
+  "size_loc": 14,
+  "justification": "All UI components talk to a hook. The data layer is an interface with multiple implementations. Replacing the backend is a single edit at the bootstrap site."
+}

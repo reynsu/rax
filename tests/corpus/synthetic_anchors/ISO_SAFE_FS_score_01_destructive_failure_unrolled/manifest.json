@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_SAFE_FS",
+  "expected_score_1_to_10": 1,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 5,
+  "justification": "Two-step money move with no rollback, no idempotency, no compensating transaction. Unsafe failure mode by construction."
+}

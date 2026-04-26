@@ -1,0 +1,17 @@
+rules:
+  - id: rax.sec.string-concat-href
+    pattern-either:
+      - pattern: <a href={"http://" + $X} ...>...</a>
+      - pattern: <a href={"https://" + $X} ...>...</a>
+      - pattern: <a href={`https://${$X}/...`} ...>...</a>
+      - pattern: <a href={`http://${$X}/...`} ...>...</a>
+    message: |
+      Building hrefs by string concatenation skips host validation and
+      encoding. Use the URL constructor (new URL(path, base)) so invalid
+      input throws and special characters get encoded predictably.
+    languages: [typescript]
+    severity: WARNING
+    metadata:
+      iso_sub_id: ISO_SEC_INT
+      rax_v1_id: SEC-2
+      cwe: "CWE-20"

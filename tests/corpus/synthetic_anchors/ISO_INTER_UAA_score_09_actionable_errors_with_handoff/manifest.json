@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_INTER_UAA",
+  "expected_score_1_to_10": 9,
+  "tier": "extreme_high",
+  "framework": "react",
+  "size_loc": 7,
+  "justification": "Error states are typed, copy is specific and actionable, support handoff includes a reference. User assistance is real."
+}

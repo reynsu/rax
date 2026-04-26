@@ -1,0 +1,18 @@
+rules:
+  - id: rax.sec.target-blank-without-noopener
+    patterns:
+      - pattern: <a target="_blank" href=$H>...</a>
+      - pattern-not: <a target="_blank" rel="noopener noreferrer" href=$H>...</a>
+      - pattern-not: <a target="_blank" rel="noopener" href=$H>...</a>
+      - pattern-not: <a target="_blank" rel="noreferrer" href=$H>...</a>
+    message: |
+      target="_blank" without rel="noopener" gives the opened page access to
+      window.opener and a reverse-tabnabbing vector. Add rel="noopener
+      noreferrer" (modern browsers handle this implicitly but linters and
+      older runtimes still need the attribute).
+    languages: [typescript]
+    severity: WARNING
+    metadata:
+      iso_sub_id: ISO_SEC_INT
+      rax_v1_id: SEC-2
+      cwe: "CWE-1022"

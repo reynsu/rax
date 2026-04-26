@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_MAINT_TEST",
+  "expected_score_1_to_10": 1,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 6,
+  "justification": "Singleton imported during render + window magic for tests = nothing is mockable cleanly. Tests are flaky and brittle."
+}

@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_SEC_RES",
+  "expected_score_1_to_10": 1,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 3,
+  "justification": "Plain HTTP for production API. Traffic visible and tamperable on any shared network. Indefensible in 2026."
+}

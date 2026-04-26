@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_PERF_TIME",
+  "expected_score_1_to_10": 2,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 10,
+  "justification": "memo() defeated by inline object literal. Heavy re-renders every Parent render. Classic anti-pattern."
+}

@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://rax.dev/schemas/audit-output-v2.json",
+  "title": "rax v2 audit output (LLM-side)",
+  "description": "Structured output emitted by a single rax judge. The panel layer aggregates several of these, and the conformal layer wraps them into intervals.",
+  "type": "object",
+  "required": ["subcharacteristics", "summary"],
+  "additionalProperties": false,
+  "properties": {
+    "subcharacteristics": {
+      "type": "object",
+      "patternProperties": {
+        "^ISO_[A-Z]+_[A-Z0-9]+$": {
+          "type": "object",
+          "required": ["score_1_to_4", "justification", "findings"],
+          "additionalProperties": false,
+          "properties": {
+            "score_1_to_4": {
+              "anyOf": [
+                {"type": "number", "minimum": 1.0, "maximum": 4.0},
+                {"type": "null"}
+              ],
+              "description": "1=catastrophic, 2=problematic, 3=acceptable, 4=exemplar. null = n/a for this codebase."
+            },
+            "justification": {
+              "type": "string",
+              "minLength": 30,
+              "maxLength": 2000
+            },
+            "findings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["file", "line", "severity", "title", "fix"],
+                "additionalProperties": false,
+                "properties": {
+                  "file": {"type": "string", "minLength": 1},
+                  "line": {"type": "integer", "minimum": 0},
+                  "severity": {"enum": ["high", "medium", "low"]},
+                  "title": {"type": "string", "minLength": 5, "maxLength": 200},
+                  "fix": {"type": "string", "minLength": 5, "maxLength": 1000}
+                }
+              }
+            },
+            "false_positives": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["rule_id", "file", "line", "reason"],
+                "properties": {
+                  "rule_id": {"type": "string"},
+                  "file": {"type": "string"},
+                  "line": {"type": "integer", "minimum": 0},
+                  "reason": {"type": "string", "minLength": 10}
+                }
+              },
+              "default": []
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

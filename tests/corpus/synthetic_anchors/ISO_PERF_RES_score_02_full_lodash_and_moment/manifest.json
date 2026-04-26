@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_PERF_RES",
+  "expected_score_1_to_10": 2,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 6,
+  "justification": "Full lodash + full moment for trivial usage. ~360 kB of bundle for what date-fns/dayjs + Array.from(new Set) covers in <10 kB."
+}

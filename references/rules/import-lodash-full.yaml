@@ -1,0 +1,16 @@
+rules:
+  - id: rax.perf.import-lodash-full
+    pattern-either:
+      - pattern: import _ from "lodash"
+      - pattern: import * as _ from "lodash"
+      - pattern: const _ = require("lodash")
+    message: |
+      Importing lodash as a whole defeats tree-shaking (~70kB minified).
+      Use lodash-es with named imports, or lodash/fp/<fn>, or replace with
+      native ES (Array.prototype.* + structuredClone covers most cases).
+    languages: [typescript, javascript]
+    severity: WARNING
+    metadata:
+      iso_sub_id: ISO_PERF_RES
+      rax_v1_id: DEP-2
+      cwe: ""

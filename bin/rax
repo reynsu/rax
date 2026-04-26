@@ -57,10 +57,15 @@ ${B}USAGE${X}
   rax <command> [options]
 
 ${B}AUDIT${X}
-  rax audit [--mode MODE] [--category CAT] [--save]
-              MODE ∈ {quick, diff, focused, full}     default: diff
-              --save   also promote the result to baseline
-              --category CAT   used with --mode focused (e.g. SEC, PRF)
+  rax audit [--mode MODE] [--profile NAME] [--category CAT] [--save] [--no-deterministic]
+              MODE ∈ {quick, diff, focused, full}        default: diff
+              --profile NAME    consumer-app | fintech | internal-tool
+                                | accessibility-critical    default: consumer-app
+              --save            promote the result to baseline
+              --category CAT    used with --mode focused (e.g. Security, Reliability)
+              --no-deterministic   skip Semgrep/ESLint/tsc/madge/jscpd/npm audit
+                                   (loses Semgrep's secret/XSS detection;
+                                   not recommended for security-focused runs)
 
 ${B}VIEW${X}
   rax score                    headline overall score + delta vs baseline
@@ -90,12 +95,13 @@ ${B}MAINTENANCE${X}
   rax version
 
 ${B}EXAMPLES${X}
-  rax audit --mode=quick          # pre-commit quick audit of staged files
-  rax audit                       # default: diff vs baseline (pre-push)
-  rax audit --mode=full --save    # full audit, save as new baseline
-  rax pending --category=SEC      # only security findings still open
-  rax fixed                       # celebrate what you cleaned up
-  rax delta                       # see how your branch changed things
+  rax audit --mode=quick                  # pre-commit quick audit of staged files
+  rax audit                               # default: diff vs baseline (pre-push)
+  rax audit --mode=full --save            # full audit, save as new baseline
+  rax audit --profile=fintech --mode=full # weighted for financial apps
+  rax pending --category=Security         # only security findings still open
+  rax fixed                               # celebrate what you cleaned up
+  rax delta                               # see how your branch changed things
 
 ${B}STATE${X} lives at ${D}.claude/rax/${X} inside your repo.
   Commit the skill directory, ignore the state dir.

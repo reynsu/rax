@@ -1,0 +1,15 @@
+# Profile: default
+# Alias semántico de consumer-app. Usado cuando el caller no pasa --profile
+# o pasa --profile default. Mantenido como archivo separado para que
+# herencias futuras (ej. extender default sin tocar consumer-app) sean fáciles.
+
+description: |
+  Default profile. Hereda de consumer-app — el perfil por defecto cuando
+  el proyecto no especifica uno. Cambios al default deben hacerse aquí,
+  no en consumer-app, para preservar el "perfil canónico de consumo".
+
+extends: consumer-app
+
+weights: {}              # heredados de consumer-app
+utility_overrides: {}    # heredados de consumer-app
+red_flag_rules: []       # heredados de consumer-app

@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_MAINT_MOD2",
+  "expected_score_1_to_10": 1,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 12,
+  "justification": "Same concept (current user) lives in 3+ places. Any change risks drift. Modifiability collapses."
+}

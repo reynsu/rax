@@ -1,0 +1,17 @@
+rules:
+  - id: rax.sec.window-location-userinput
+    pattern-either:
+      - pattern: window.location = $X
+      - pattern: window.location.href = $X
+      - pattern: window.location.assign($X)
+      - pattern: location.href = $X
+    message: |
+      Assigning to window.location with user-controlled input enables open
+      redirect attacks. Validate the URL: parse with new URL(), enforce a
+      same-origin or allowlisted host, and reject javascript:/data: schemes.
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      iso_sub_id: ISO_SEC_INT
+      rax_v1_id: SEC-2
+      cwe: "CWE-601"

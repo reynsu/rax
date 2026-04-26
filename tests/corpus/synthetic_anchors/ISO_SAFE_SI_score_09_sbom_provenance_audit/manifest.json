@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_SAFE_SI",
+  "expected_score_1_to_10": 9,
+  "tier": "extreme_high",
+  "framework": "react-native",
+  "size_loc": 6,
+  "justification": "SBOM + provenance + audit gating + WebView hardening. Integration surface is small, audited, and signed."
+}

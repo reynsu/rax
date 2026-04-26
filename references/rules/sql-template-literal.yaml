@@ -1,0 +1,20 @@
+rules:
+  - id: rax.sec.sql-template-literal
+    patterns:
+      - pattern-either:
+          - pattern: $DB.query(`...${$X}...`)
+          - pattern: $DB.execute(`...${$X}...`)
+          - pattern: $DB.raw(`...${$X}...`)
+      - metavariable-regex:
+          metavariable: $X
+          regex: "."
+    message: |
+      Building SQL by string interpolation enables SQL injection. Use
+      parameterized queries: db.query(text, [params]) for pg, prepared
+      statements for mysql2/better-sqlite3, or an ORM (Prisma, Kysely).
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      iso_sub_id: ISO_SEC_INT
+      rax_v1_id: SEC-2
+      cwe: "CWE-89"

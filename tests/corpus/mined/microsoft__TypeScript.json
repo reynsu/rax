@@ -1,0 +1,21 @@
+{
+  "owner": "microsoft",
+  "name": "TypeScript",
+  "name_with_owner": "microsoft/TypeScript",
+  "created_at": "2020-01-01T00:00:00Z",
+  "pushed_at": "2026-04-01T00:00:00Z",
+  "is_archived": false,
+  "is_fork": false,
+  "lifespan_years": 5.37,
+  "star_count": 29827,
+  "fork_count": 2515,
+  "defect_density_per_file": 0.428,
+  "recent_activity_commits": 93,
+  "review_intensity": {
+    "avg_comments_per_pr": 7.28,
+    "avg_reviews_per_pr": 2.41
+  },
+  "cve_count": 2,
+  "synthetic": true,
+  "mined_at": "2026-04-25T00:00:00Z"
+}

@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_SEC_ACC",
+  "expected_score_1_to_10": 2,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 7,
+  "justification": "Errors logged with no userId / sessionId / orderId. Impossible to trace incidents back to specific users."
+}

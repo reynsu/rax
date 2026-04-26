@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_REL_FT",
+  "expected_score_1_to_10": 1,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 9,
+  "justification": "No error boundary anywhere. A render-time TypeError crashes the entire app to a white screen. No recovery affordance."
+}

@@ -1,0 +1,16 @@
+rules:
+  - id: rax.perf.scrollview-on-flatlist
+    pattern-either:
+      - pattern: <ScrollView ...><FlatList ... /></ScrollView>
+      - pattern: <ScrollView ...><SectionList ... /></ScrollView>
+    message: |
+      Nesting a virtualized list inside ScrollView with the same scroll
+      direction defeats virtualization (FlatList renders all items). Either
+      remove the outer ScrollView or use FlatList's ListHeaderComponent /
+      ListFooterComponent to host the surrounding content.
+    languages: [typescript]
+    severity: ERROR
+    metadata:
+      iso_sub_id: ISO_PERF_CAP
+      rax_v1_id: PRF-3
+      cwe: ""

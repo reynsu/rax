@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_MAINT_ANAL",
+  "expected_score_1_to_10": 2,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 7,
+  "justification": "No types, opaque names, magic flags. Reader has to mentally execute to know what this does. Costly to change."
+}

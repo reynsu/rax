@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_FLEX_REPL",
+  "expected_score_1_to_10": 2,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 7,
+  "justification": "Vendor SDK imported into UI components. Replacing the backend requires editing every consumer."
+}

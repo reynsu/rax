@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_PERF_RES",
+  "expected_score_1_to_10": 9,
+  "tier": "extreme_high",
+  "framework": "react",
+  "size_loc": 14,
+  "justification": "Tree-shakeable date-fns subimport, native Set for dedup, lazy-loaded heavy module. Bundle stays tight."
+}

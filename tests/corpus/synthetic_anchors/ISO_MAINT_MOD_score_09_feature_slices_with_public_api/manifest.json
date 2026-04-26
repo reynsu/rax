@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_MAINT_MOD",
+  "expected_score_1_to_10": 9,
+  "tier": "extreme_high",
+  "framework": "react",
+  "size_loc": 8,
+  "justification": "Feature slice with explicit public surface; deep imports blocked by ESLint boundaries. Maximally modular within React conventions."
+}

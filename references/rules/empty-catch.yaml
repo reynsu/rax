@@ -1,0 +1,21 @@
+rules:
+  - id: rax.rel.empty-catch
+    pattern-either:
+      - pattern: |
+          try { ... } catch ($E) { }
+      - pattern: |
+          $P.catch(() => {})
+      - pattern: |
+          $P.catch(($E) => {})
+      - pattern: |
+          $P.catch(($E) => { })
+    message: |
+      Silently swallowing errors hides bugs and crashes from monitoring. At
+      minimum, log to your error tracker (Sentry, Bugsnag) with context. If
+      this exception is genuinely safe to ignore, document why in a comment.
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      iso_sub_id: ISO_REL_FT
+      rax_v1_id: ERR-2
+      cwe: "CWE-390"

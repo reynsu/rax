@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_INTER_OP",
+  "expected_score_1_to_10": 1,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 3,
+  "justification": "<div> as a button. Not focusable, no keyboard support, no role. Inoperable without a mouse."
+}

@@ -1,0 +1,16 @@
+rules:
+  - id: rax.perf.import-moment
+    pattern-either:
+      - pattern: import moment from "moment"
+      - pattern: import * as moment from "moment"
+      - pattern: const moment = require("moment")
+    message: |
+      moment is in maintenance mode and ships ~290kB minified with all
+      locales. Prefer date-fns (tree-shakable, ~80kB used), dayjs (~7kB), or
+      Intl.DateTimeFormat for formatting only.
+    languages: [typescript, javascript]
+    severity: WARNING
+    metadata:
+      iso_sub_id: ISO_PERF_RES
+      rax_v1_id: DEP-2
+      cwe: ""

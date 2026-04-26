@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_SEC_CONF",
+  "expected_score_1_to_10": 1,
+  "tier": "extreme_low",
+  "framework": "react",
+  "size_loc": 8,
+  "justification": "Hardcoded production payment-processor secret in client source (value here is an obvious placeholder; the smell is the pattern: secret-shaped string assigned to a const named with an authn-secret keyword, embedded in client-shipped code). Catastrophic."
+}

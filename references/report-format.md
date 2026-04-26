@@ -1,185 +1,116 @@
-# Report Format
+# rax v2 audit report — format
 
-The report is the product. Its shape is fixed so reports are diffable run-to-run. Do not improvise sections. Do not reorder. Do not add emoji to the scoring headers (emojis in category *names* in the table are fine and encoded in the template).
+> v1 report format is preserved at `references/report-format-v1.md`. v2
+> reports always carry intervals; consumers built for v1 fall back to
+> `interval = [score - 1, score + 1]` when reading a point-only report.
 
-Write the report in Markdown to a temp path, then call `rax report save --file <path>` — the CLI moves it to `.claude/rax/reports/<ISO-timestamp>.md` and updates the `latest` pointer. Print the full report to the user in the chat.
+The report is the product. Its shape is fixed so reports are diffable
+run-to-run. Do not improvise sections. Do not reorder.
 
-## Template (copy this shape exactly)
-
-```markdown
-# React/RN Audit — <mode> · <YYYY-MM-DD> · <branch>@<short-sha>
-
-- **Mode:** <quick|diff|focused|full>
-- **Commit:** <full-sha>
-- **Branch:** <branch>
-- **Scope:** <N> files · <project type: React Web | React Native | Expo | Next.js | Remix | RN + Web> · TS <on|off>
-- **Baseline:** <short-sha> from <YYYY-MM-DD> (<commits-ago> commits ago) · <or: "none">
-- **Config:** default weights <or: "custom — see footer">
-
-## Overall: <X.X>/10  <delta arrow> <± delta>
-
-<One-sentence headline. For diff mode: lead with what changed. For full mode: lead with the overall health statement. No emojis. No hype.>
-
-## Category scores
-
-| ID  | Category                     | Score  | Δ       | Weight |
-|-----|------------------------------|--------|---------|--------|
-| ARC | Architecture & Structure     | X.X/10 | ▲ +0.3  | 12     |
-| CQR | Code Quality & Readability   | X.X/10 | ↔  0.0  | 10     |
-| RXP | React / RN Patterns          | X.X/10 | ▼ −0.4  | 12     |
-| PRF | Performance                  | X.X/10 | ▲ +0.2  | 12     |
-| SEC | Security                     | X.X/10 | ↔  0.0  | 13     |
-| UXA | UI/UX & Accessibility        | X.X/10 | ↔  0.0  | 10     |
-| TYP | Type Safety                  | X.X/10 | ↔  0.0  | 8      |
-| ERR | Error Handling & Resilience  | X.X/10 | ↔  0.0  | 7      |
-| TST | Testing                      | X.X/10 | ↔  0.0  | 8      |
-| DEP | Dependencies & Bundle        | X.X/10 | ↔  0.0  | 4      |
-| APT | Anti-patterns                | X.X/10 | ↔  0.0  | 4      |
-
-## Critical issues
-
-<Every red-flag and every subcriterion scoring ≤3. Empty section allowed — write "None." if truly none.>
-
-### C1. [SEC] <finding title>
-- **Where:** `src/api/client.ts:14`, `src/auth/session.ts:42`
-- **Severity:** high
-- **Why it matters:** <one sentence, concrete impact>
-- **Score impact:** SEC capped at 4 by red-flag rule
-- **Fix:** <concrete steps — not "refactor this">
-
-### C2. [PRF] <finding title>
-...
-
-## Warnings
-
-<Subcriteria scoring 4–5, plus any `major` anti-pattern hits not already in Critical. Group by category.>
-
-### W1. [CQR] Three copies of `formatPrice` diverging
-- **Where:** `src/utils/format.ts:23`, `src/components/Cart/Line.tsx:88`, `src/screens/Checkout.tsx:201`
-- **Fix:** Consolidate into `src/utils/format.ts` — the checkout variant has a bug the others fixed.
-
-### W2. ...
-
-## Regressions since baseline
-
-<If no baseline: "No baseline for comparison.">
-<Otherwise: list every subcriterion that dropped by ≥0.5, and every new Critical/Warning finding.>
-
-- **[RXP-1 Hooks correctness]** 8 → 6  — conditional hook introduced at `src/hooks/useFeatureFlag.ts:34`
-- **NEW CRITICAL [SEC-1 Secrets]** — Sentry DSN committed at `src/monitoring.ts:5`
-
-## Improvements since baseline
-
-<If no baseline: omit this section.>
-
-- **[TST-1 Coverage]** 5 → 7 — new tests under `src/features/checkout/__tests__/`
-- **[CQR-2 Complexity]** 6 → 8 — `OrderSummary` refactored, cyclomatic complexity 18 → 7
-
-## Top 3 actions (highest score-per-effort)
-
-<Rank by (estimated-score-lift) / (estimated-effort-hours). Include the specific files.>
-
-1. **Move the Sentry DSN to an env var.** (+~0.8 overall, ~10 min)
-   - Files: `src/monitoring.ts:5`
-   - Exact change: replace hardcoded string with `process.env.EXPO_PUBLIC_SENTRY_DSN`; add to `.env.example`.
-
-2. **Wrap `ProductList` rendering in `FlatList`.** (+~0.5 overall, ~1h)
-   - Files: `src/screens/Catalog.tsx:44-89`
-   - Details: current `ScrollView` + `.map` renders ~200 items on mount; swap for `FlatList` with `keyExtractor={item => item.id}` and `getItemLayout` (items are fixed 72px).
-
-3. **Add error boundaries per route.** (+~0.4 overall, ~2h)
-   - Files: `src/router.tsx` (one place to add)
-   - Details: wrap each `<Route element=>` in a route-level boundary with a retry action.
-
-## Per-category detail
-
-### ARC — Architecture & Structure · <X.X>/10
-
-| Subcriterion                           | Score | Note                                                                             |
-|----------------------------------------|-------|----------------------------------------------------------------------------------|
-| ARC-1 Folder organization              | 8/10  | Feature-sliced with `shared/` for cross-cutting; clean.                          |
-| ARC-2 Separation of concerns           | 6/10  | Data fetching mixed with view in `screens/Profile.tsx:20-120`.                   |
-| ARC-3 Module boundaries & coupling     | 7/10  | Path aliases set; no circular deps; two cross-feature imports noted below.       |
-| ARC-4 State management architecture    | 8/10  | React Query for server, Zustand for UI state, URL for nav — clear split.        |
-| ARC-5 Feature cohesion                 | 7/10  | Checkout feature has leakage into `shared/ui/`; see `shared/ui/PaymentBadge.tsx`.|
-
-**Findings:**
-- `src/screens/Profile.tsx:20-120` — 100 lines of data fetching + formatting + view. Extract `useProfile()` hook.
-- `src/features/checkout/services/orders.ts:12` imports `src/features/catalog/utils/formatCurrency.ts` — cross-feature.
-
-### CQR — Code Quality & Readability · <X.X>/10
-
-...
-
-<repeat for every category — include subcriterion table + findings list>
-
-## Scope notes
-
-<What was and wasn't assessed. Caveats. Anything the reader must know to trust the score.>
-
-- **Mode:** quick (staged files only). 7 files audited in scope.
-- **Not assessed:** E2E tests (none exist in repo); native iOS/Android code (out of skill scope).
-- **Deferred:** PRF-4 (bundle analysis requires `yarn analyze` — not run).
-- **Inferred:** TST score assumes current coverage numbers from `coverage/coverage-summary.json`.
-- **Config:** default weights used.
-
-## Methodology
-
-Rubric version 1.0 · Anti-patterns catalog v1.0 · Tool: rax skill
+Write the report in Markdown to a temp path, then call `rax report save
+--file <path>` — the CLI moves it to `.claude/rax/reports/<iso>.md` and
+updates the `latest` pointer.
 
 ---
-*Generated by rax · <timestamp> · Claude*
+
+## Header
+
+```
+# rax audit — <iso_date> · <commit_short> · <profile>
+
+**Profile:**     consumer-app (default)
+**Mode:**        full | quick | diff
+**Rubric:**      rax-v2.0.0  (anchored to ISO/IEC 25010:2023)
+**Corpus:**      v2.<N>      (synthetic anchors + mined + cross-LLM)
+**Calibration:** empirical coverage <X>% (target band 85–95%)
+**Panel:**       claude-opus-4-7 · gpt-4o · gemini-1.5-pro
+**Tools (det):** Semgrep · ESLint · tsc · madge · jscpd · npm audit
 ```
 
-## Formatting rules
+## Overall
 
-### Scores
-- Always one decimal: `7.3`, not `7` or `7.34`.
-- Subcriterion scores are integers: `7/10`, not `7.5/10`. Use 5 or 6 rather than 5.5.
+```
+## Overall: [<p5>, <p95>]/10  (90% CI, median <p50>)
+vs baseline [<p5>, <p95>]: overlap <X>%  → <verdict>
 
-### Deltas
-- `▲ +X.X` for increases
-- `▼ −X.X` for decreases (use minus sign −, not hyphen -)
-- `↔  0.0` for no change (within ±0.05) — two spaces after `↔` to align the column
-- **NEW** tag for findings not present in baseline
-- **FIXED** tag for Critical/Warning items in baseline that are gone
+verdicts:
+   overlap ≥ 70% → "no significant change"
+   30% ≤ overlap < 70% → "uncertain"
+   overlap < 30% with this < baseline → "likely regression"
+   overlap < 30% with this > baseline → "likely improvement"
+```
 
-### File references
-- Single line: `path/to/file.tsx:42`
-- Range: `path/to/file.tsx:42-58`
-- Multiple: `path/to/file.tsx:42, 89, 132`
-- Never omit the line number. If you can't give one, re-read the file.
+## By ISO 25010 characteristic
 
-### Category names
-Use these exact identifiers (ARC, CQR, RXP, PRF, SEC, UXA, TYP, ERR, TST, DEP, APT) in brackets when cross-referencing findings. The identifiers are stable; only the long names change. Makes grep-ability real.
+```
+| ISO Characteristic    | CI 90%       | Median | Confidence | Δ vs baseline |
+|-----------------------|--------------|--------|------------|---------------|
+| Security              | [3.5, 5.0]   | 4.2    | high       | -0.4 (regr.)  |
+| Maintainability       | [5.0, 7.5]   | 6.2    | medium     | +0.1          |
+| Reliability           | ABSTAINED    | —      | low        | —             |
+| Interaction Capability| [6.4, 8.1]   | 7.3    | high       | +0.0          |
+| ...                   |              |        |            |               |
+```
 
-### Language
-- Match the user's language for prose sections.
-- Keep identifiers, file paths, config keys, and category codes in English.
-- Code in code blocks is always English (keywords, APIs).
+ABSTAINED rows are NOT included in the Overall calculation. The remaining
+weights are renormalized; the report header explicitly notes how many
+abstentions there were and which characteristics they affected.
 
-### Tone
-- Factual. Not cheerful ("Great job!"), not doom ("This is a disaster").
-- Credit wins in the Improvements section, not mid-sentence.
-- No emoji in the body (the visual indicators ▲ ▼ ↔ are allowed; they're semantic).
-- Avoid hedging words: "perhaps", "kind of", "might be". If you're not sure, don't score it.
+## Findings
 
-### Length discipline
-- A `quick` mode report: ~1–2 pages.
-- A `full` mode report: 4–8 pages. Anything longer means per-category details aren't focused.
-- Per-category findings: prioritize. 3–5 per category is plenty. Not a dump.
+Findings are sorted by severity and then by ISO sub-characteristic.
 
-## Output channels
+### Critical
+```
+1. [SEC/Confidentiality] Hardcoded production secret
+   - File:        src/config/api.ts:12
+   - Detected by: deterministic (semgrep rax.sec.hardcoded-jwt-secret)
+   - Severity:    high
+   - Fix:         Move to env var loaded at runtime; rotate the leaked key.
+```
 
-1. **Print to chat** — full report, rendered as Markdown.
-2. **Save to file** — `.claude/rax/reports/<ISO-date>_<mode>_<short-sha>.md`. Print the path at the bottom of the chat output.
-3. **Baseline update** — only on `full` mode with clean working tree, and only after confirming with user if overwriting a recent baseline.
+### Warnings
+```
+2. [MAINT/Modularity] Cross-feature import bypasses public API
+   - File:        src/features/checkout/CheckoutScreen.tsx:142
+   - Detected by: panel (Claude + GPT-4 majority)
+   - Severity:    medium
+   - Fix:         Add src/features/payments/index.ts re-exporting only the
+                  public surface, then change the import.
+```
 
-## What the report must not do
+### Notes (low-severity / suggestion only)
+```
+3. [INTER/Inclusivity] alt text reads like filename
+   ...
+```
 
-- **Not** say "overall the code is good" as the headline. Use numbers.
-- **Not** restructure the sections. They're in the order that matters.
-- **Not** bury critical findings inside per-category detail. Critical goes in Critical.
-- **Not** score without evidence. Every category has findings, or explain why not.
-- **Not** compare to a baseline that doesn't exist. Say "No baseline" and proceed.
-- **Not** promise more than it delivers. "Top 3 actions" means 3, not 8.
+## Footer
+
+```
+Rubric:               rax-v2.0.0     (references/rubric-v2.md)
+ISO mapping:          ISO/IEC 25010:2023  (references/iso25010-mapping.md)
+Corpus version:       v2.<N>          (synthetic + mined + cross-LLM, no human)
+Calibration coverage: <X>%            (target band 85–95%)
+Panel:                <models, with replicate count>
+Tools deterministas:  Semgrep · ESLint · tsc · madge · jscpd · npm audit
+Profile:              <profile name + path>
+Generated:            <iso datetime>
+
+Honesty footer (always included): see the canonical wording in
+the README's "Honesty footer" section. Reports embed it verbatim;
+this file references the README rather than duplicating the text
+to avoid the two copies drifting.
+```
+
+## Backward compatibility (v1 readers)
+
+A v1 reader receiving a v2 report should:
+- Read `Overall.median` as the v1 overall score.
+- Read each row's `Median` column as the v1 category score.
+- Treat ABSTAINED categories as `n/a`.
+
+A v2 reader receiving a v1 report should:
+- Treat each v1 score `s` as the synthetic interval `[max(0, s-1.0), min(10, s+1.0)]`.
+- Compute Overall via `aggregate_intervals_to_overall` over the synthesized intervals.
+- Mark the report with `compatibility: v1-upgraded`.

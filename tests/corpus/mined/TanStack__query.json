@@ -1,0 +1,21 @@
+{
+  "owner": "TanStack",
+  "name": "query",
+  "name_with_owner": "TanStack/query",
+  "created_at": "2020-01-01T00:00:00Z",
+  "pushed_at": "2026-04-01T00:00:00Z",
+  "is_archived": false,
+  "is_fork": false,
+  "lifespan_years": 5.76,
+  "star_count": 178884,
+  "fork_count": 13883,
+  "defect_density_per_file": 0.2886,
+  "recent_activity_commits": 54,
+  "review_intensity": {
+    "avg_comments_per_pr": 3.36,
+    "avg_reviews_per_pr": 3.99
+  },
+  "cve_count": 4,
+  "synthetic": true,
+  "mined_at": "2026-04-25T00:00:00Z"
+}

@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_MAINT_TEST",
+  "expected_score_1_to_10": 9,
+  "tier": "extreme_high",
+  "framework": "react",
+  "size_loc": 9,
+  "justification": "Inversion of control via prop. Trivially mockable in unit tests; MSW handles E2E. Testability is a design feature, not retrofit."
+}

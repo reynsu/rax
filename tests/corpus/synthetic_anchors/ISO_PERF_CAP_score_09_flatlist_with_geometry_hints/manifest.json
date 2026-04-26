@@ -1,0 +1,8 @@
+{
+  "iso_sub_id": "ISO_PERF_CAP",
+  "expected_score_1_to_10": 9,
+  "tier": "extreme_high",
+  "framework": "react-native",
+  "size_loc": 21,
+  "justification": "FlatList with stable keys, getItemLayout (no measurement), tuned windowSize, memoized row. Scrolls 60fps at hundreds of thousands of items."
+}
